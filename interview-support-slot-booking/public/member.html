@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>Member Login</title>
+  <link rel="stylesheet" href="member.css">
+</head>
+<body>
+  <main class="member-shell">
+    <header class="member-topbar">
+      <div><p class="eyebrow">MEMBER AREA</p><h1>My bookings</h1></div>
+      <a href="/" class="back-link">Book a slot</a>
+    </header>
+
+    <section id="loginCard" class="member-card">
+      <p class="eyebrow">EMAIL OTP LOGIN</p>
+      <h2>Manage your bookings</h2>
+      <p class="muted">Enter your email address and we'll send you a verification code.</p>
+      <form id="emailForm">
+        <label>Email address<input id="loginEmail" type="email" required autocomplete="email" placeholder="you@example.com"></label>
+        <button class="primary-btn" id="sendOtpBtn" type="submit">Send OTP</button>
+      </form>
+      <p id="loginMessage" class="message" aria-live="polite"></p>
+    </section>
+
+    <section id="otpCard" class="member-card hidden">
+      <p class="eyebrow">VERIFY EMAIL</p>
+      <h2>Enter your OTP</h2>
+      <p class="muted">A 6-digit verification code was sent to <strong id="otpEmail"></strong>.</p>
+      <form id="otpForm">
+        <label>Verification code<input id="otpCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required placeholder="123456" autocomplete="one-time-code"></label>
+        <button class="primary-btn" id="verifyOtpBtn" type="submit">Verify OTP</button>
+      </form>
+      <div class="otp-actions">
+        <button class="link-btn" id="resendOtpBtn" type="button">Resend OTP</button>
+        <button class="link-btn" id="backToEmailBtn" type="button">Change email</button>
+      </div>
+      <p id="otpMessage" class="message" aria-live="polite"></p>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div class="dashboard-head">
+        <div><p class="eyebrow">SIGNED IN</p><h2 id="memberEmail"></h2></div>
+        <button id="logoutBtn" class="secondary-btn" type="button">Logout</button>
+      </div>
+
+      <section class="member-card">
+        <div class="section-head"><div><p class="eyebrow">UPCOMING</p><h2>Your bookings</h2></div></div>
+        <div id="upcomingBookings" class="booking-list"></div>
+      </section>
+
+      <section class="member-card">
+        <div class="section-head"><div><p class="eyebrow">HISTORY</p><h2>Past & cancelled</h2></div></div>
+        <div id="historyBookings" class="booking-list"></div>
+      </section>
+      <p id="dashboardMessage" class="message" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+  <script src="schedule.js"></script>
+  <script src="member-auth.js"></script>
+  <script src="member.js"></script>
+</body>
+</html>
+

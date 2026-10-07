@@ -1,0 +1,38 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["public/schedule.js"]
+
+[functions.reminders]
+  schedule = "*/5 * * * *"
+
+[[redirects]]
+  from = "/member"
+  to = "/member.html"
+  status = 200
+[[redirects]]
+  from = "/member/"
+  to = "/member.html"
+  status = 200
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+[[redirects]]
+  from = "/admin/"
+  to = "/admin.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"

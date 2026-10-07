@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>Interview Support · Book Your Slot</title>
+  <meta name="description" content="Book a 30- or 60-minute interview support slot. Choose your timezone and manage your bookings online.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div><p class="eyebrow">SLOT BOOKING</p><h1>Book your time</h1></div>
+      <a class="admin-link" href="/member">My bookings</a>
+    </header>
+
+    <section class="hero-card">
+      <div><span class="status-dot"></span><span>Live availability</span></div>
+      <h2>Book your interview support slot.</h2>
+      <p>Select a date and reserve a 30- or 60-minute slot.</p>
+    </section>
+
+    <section id="rescheduleNotice" class="calendar-card hidden"><p class="eyebrow">RESCHEDULE BOOKING</p><p id="rescheduleText"></p><a class="admin-link" href="/member">Back to my bookings</a></section>
+    <section class="calendar-card">
+      <div class="calendar-heading">
+        <button id="prevMonth" class="icon-btn" aria-label="Previous month">‹</button>
+        <div><p class="month-label" id="monthLabel"></p><small id="selectedDateLabel"></small></div>
+        <button id="nextMonth" class="icon-btn" aria-label="Next month">›</button>
+      </div>
+      <div class="weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+      <div id="calendarGrid" class="calendar-grid"></div>
+      <div class="legend"><span><i class="available-dot"></i> Available</span><span><i class="booked-dot"></i> Booked</span></div>
+    </section>
+
+    <section class="slots-section">
+      <div class="section-title">
+        <div><p class="eyebrow">SELECT A TIME</p><h2 id="slotsTitle">Available slots</h2></div>
+        <span class="date-pill" id="slotDatePill"></span>
+      </div>
+      <div class="timezone-box">
+        <label id="timezoneLabel">Showing times in Asia/Kolkata</label>
+        <div class="timezone-row">
+          <select id="timezoneRegion" aria-label="Timezone compatibility" hidden tabindex="-1">
+            <option value="">Select region</option>
+          </select>
+          <select id="timezoneSelect" aria-label="Select time zone">
+            <option value="Asia/Kolkata">Asia/Kolkata</option>
+          </select>
+        </div>
+        <small id="timezoneHint" aria-hidden="true"></small>
+      </div>
+      <div class="duration-box"><p class="eyebrow">BOOKING DURATION</p><div id="durationOptions" class="segmented" role="group" aria-label="Booking duration"><button type="button" data-duration="30" aria-pressed="true">30 minutes · 1 slot</button><button type="button" data-duration="60" aria-pressed="false">60 minutes · 2 slots</button></div></div>
+      <p id="groupHint" class="control-hint">Groups follow IST. Slot dates and times follow your selected timezone.</p>
+      <div id="periodTabs" class="period-tabs" role="tablist" aria-label="Time of day"></div>
+      <p id="availabilityMessage" class="control-hint" role="status" aria-live="polite"></p>
+      <div id="slots" class="slots" role="tabpanel" aria-label="Available times"></div>
+    </section>
+  </main>
+
+  <div id="bookingModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalSlot">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-card">
+      <button class="close-btn" data-close="true" type="button" aria-label="Close booking form">×</button>
+      <p class="eyebrow">CONFIRM BOOKING</p>
+      <h2 id="modalSlot"></h2>
+      <p class="modal-subtitle">Complete your details to reserve this slot.</p>
+      <form id="bookingForm">
+        <label>Interview role / technology<input id="interviewRole" maxlength="150" required placeholder="e.g. GCP Data Engineer, Java, Networking"></label>
+        <label>Company (optional)<input id="company" maxlength="150" placeholder="Company name"></label>
+        <label>Interview round (optional)<input id="interviewRound" maxlength="100" placeholder="e.g. Technical L1, L2, HR"></label>
+        <label>Notes (optional)<textarea id="notes" maxlength="1000" rows="2" placeholder="Anything you would like us to know"></textarea></label>
+        <label>Name<input id="name" maxlength="100" required autocomplete="name" placeholder="Your full name"></label>
+        <label>Email<input id="email" maxlength="254" type="email" required autocomplete="email" placeholder="you@example.com"></label>
+        <label>WhatsApp<input id="phone" maxlength="30" type="tel" required autocomplete="tel" placeholder="+91 XXXXX XXXXX"></label>
+        <label>Selected slot<input id="bookingSlotDisplay" readonly></label>
+        <label>Time zone<input id="bookingTimezoneDisplay" readonly></label>
+        <input type="hidden" id="bookingDate"><input type="hidden" id="bookingStart"><input type="hidden" id="bookingTimezone">
+        <button class="primary-btn" id="confirmBookingBtn" type="submit">Confirm booking</button>
+      <p id="bookingProgress" class="booking-progress" aria-live="polite"></p>
+      </form>
+      <p id="bookingError" class="error"></p>
+    </section>
+  </div>
+
+  <div id="successModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <section class="modal-card success-card">
+      <div class="success-icon">✓</div><p class="eyebrow">BOOKING CONFIRMED</p><h2>Your slot is reserved</h2>
+      <div id="successDetails" class="success-details"></div><button class="primary-btn" id="successClose">Done</button>
+    </section>
+  </div>
+  <script src="schedule.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+  <script src="member-auth.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
+
