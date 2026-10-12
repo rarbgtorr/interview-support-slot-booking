@@ -4,7 +4,7 @@ const {chromium}=require('playwright'),{PGlite}=require('@electric-sql/pglite');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{spawn}=require('node:child_process');
 const root=path.resolve(__dirname,'..');let server,browser,database;
 process.env.SUPABASE_URL='https://qa.supabase.co';process.env.SUPABASE_SECRET_KEY='sb_secret_qa';
-process.env.ADMIN_PASSWORD='qa-administrator-password';process.env.ADMIN_JWT_SECRET='qa-administrator-signing-secret-at-least-32-characters';
+delete process.env.ADMIN_PASSWORD;delete process.env.ADMIN_JWT_SECRET;
 const actualFetch=global.fetch;
 (async()=>{
  database=new PGlite();await database.exec('create role anon; create role authenticated; create role service_role bypassrls;');await database.exec(fs.readFileSync(path.join(root,'supabase-schema.sql'),'utf8'));
@@ -29,7 +29,7 @@ const actualFetch=global.fetch;
   await route.fulfill({status:result.statusCode,headers:result.headers,body:result.body});
  });
  page.on('dialog',d=>d.accept());
- await page.goto('http://localhost:3018/');await page.fill('#adminPassword',process.env.ADMIN_PASSWORD);await page.click('#loginForm button');await page.waitForSelector('#slotGrid .slot-box');
+ await page.goto('http://localhost:3018/');assert.equal(await page.locator('input[type=password]').count(),0);await page.waitForSelector('#slotGrid .slot-box');
  const tile=m=>page.locator('#slotGrid [data-minute="'+m+'"]');
  async function fillBooking(type,name,phone){await page.selectOption('#bookingType',type);await page.fill('#memberName',name);await page.fill('#whatsapp',phone);await page.fill('#company','Example Company');await page.fill('#experience','5 years');await page.fill('#interviewStage',type==='demo'?'Demo':'Technical L2');}
  async function save(){await page.click('#saveBooking');await page.waitForFunction(()=>!document.getElementById('bookingDialog').open);await page.waitForFunction(()=>document.getElementById('message').textContent.includes('Booking'));}
@@ -37,11 +37,31 @@ const actualFetch=global.fetch;
  assert.match(await tile(570).innerText(),/Available.*0\/2/);assert.match(await tile(630).innerText(),/Available.*0\/2/);assert.match(await tile(600).innerText(),/Booked.*1\/2/);
  await tile(600).click();assert.equal(await page.locator('#slotBookings .booking-card').count(),1);await page.click('#addAnother');await fillBooking('interview','Second member','+919876543211');await save();assert.equal(lastBooking.start_minute,600);const secondId=lastBooking.id;assert.match(await tile(600).getAttribute('class'),/mixed/);assert.match(await tile(600).innerText(),/Full.*2\/2/);
  await tile(600).click();assert.equal(await page.locator('#slotBookings .booking-card').count(),2);assert.equal(await page.locator('#addAnother').isVisible(),false);await page.locator('#slotBookings .booking-card').filter({hasText:'First member'}).getByRole('button',{name:'Reschedule'}).click();await tile(630).click();assert.equal(await page.locator('#memberName').inputValue(),'First member');assert.equal(await page.locator('#memberTimezone').inputValue(),'America/New_York');await save();assert.equal(lastBooking.id,firstId);assert.equal(lastBooking.start_minute,630);assert.match(await tile(600).innerText(),/Booked.*1\/2/);assert.match(await tile(630).innerText(),/First member/);
- await tile(600).click();await page.click('#addAnother');await fillBooking('demo','Third member','+919876543212');await save();assert.match(await tile(600).innerText(),/Full.*2\/2/);await tile(600).click();await page.locator('#slotBookings .booking-card').filter({hasText:'Second member'}).getByRole('button',{name:'Cancel booking'}).click();await page.waitForFunction(()=>document.getElementById('message').textContent.includes('Booking cancelled'));assert.match(await tile(600).innerText(),/Booked.*1\/2/);
+ await tile(600).click();await page.click('#addAnother');await fillBooking('interview','Third member','+919876543212');await save();assert.match(await tile(600).innerText(),/Full.*2\/2/);await tile(600).click();await page.locator('#slotBookings .booking-card').filter({hasText:'Second member'}).getByRole('button',{name:'Cancel booking'}).click();await page.waitForFunction(()=>document.getElementById('message').textContent.includes('Booking cancelled'));assert.match(await tile(600).innerText(),/Booked.*1\/2/);
  const screenDir=process.env.QA_SCREENSHOT_DIR;if(screenDir){fs.mkdirSync(screenDir,{recursive:true});await page.screenshot({path:path.join(screenDir,'simple-mobile.png'),fullPage:true});}
+
+ // Check actual rendered booking colors in both device themes, including member pills.
+ for(const colorScheme of ['light','dark']){
+  await page.emulateMedia({colorScheme});await page.setViewportSize({width:390,height:844});
+  const ratios=await page.evaluate(()=>{
+   const rgb=value=>value.match(/[\d.]+/g).slice(0,3).map(Number);
+   const lum=value=>rgb(value).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0);
+   const contrast=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+   return [...document.querySelectorAll('.slot-box.demo,.slot-box.interview')].flatMap(box=>{
+    const bg=getComputedStyle(box).backgroundColor;
+    return [...box.querySelectorAll('.slot-time,.slot-count,.member-pill')].map(node=>{const style=getComputedStyle(node);return {label:node.className,ratio:contrast(style.color,node.classList.contains('member-pill')?style.backgroundColor:bg)};});
+   });
+  });
+  assert.ok(ratios.length>0);for(const r of ratios)assert.ok(r.ratio>=4.5,colorScheme+' '+r.label+' contrast: '+r.ratio);
+  if(screenDir)await page.screenshot({path:path.join(screenDir,colorScheme+'-mobile.png'),fullPage:true});
+  await tile(600).click();if(screenDir)await page.screenshot({path:path.join(screenDir,colorScheme+'-details.png')});await page.locator('[data-close="slotDialog"]').click();
+  await tile(660).click();if(screenDir)await page.screenshot({path:path.join(screenDir,colorScheme+'-form.png')});await page.locator('[data-close="bookingDialog"]').click();
+  for(const width of [320,390,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}
+ }
+ await page.emulateMedia({colorScheme:'light'});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.setViewportSize({width:320,height:740});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.setViewportSize({width:1440,height:1000});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  await page.getByRole('tab',{name:'Night',exact:true}).click();assert.equal(await page.locator('#slotGrid .slot-box').count(),12);assert.match(await tile(1590).innerText(),/2:30 am.*3:00 am/i);await tile(1590).click();assert.match(await page.locator('#selectedTime').innerText(),/2 Jan 2030/);await page.locator('[data-close="bookingDialog"]').click();
  const rows=(await database.query('select start_minute from public.support_slot_reservations where appointment_id=$1',[firstId])).rows;assert.deepEqual(rows.map(r=>r.start_minute),[630]);assert.equal((await database.query('select count(*)::int as n from public.support_slot_reservations where appointment_id=$1',[secondId])).rows[0].n,0);
- await page.click('#logout');await page.waitForSelector('#loginCard:not(.hidden)');assert.equal(await page.locator('#slotBookings .booking-card').count(),0);assert.equal(await page.locator('#memberName').inputValue(),'');assert.equal(errors.length,0,errors.join('\n'));assert.equal((await page.goto('http://localhost:3018/booking')).status(),404);
- console.log('Browser flow passed: exact 30-minute boxes, six fields, demo/interview colours, two bookings, reschedule release, cancel isolation, timezone, 320/390/1440px layouts, and no extra pages.');
+ assert.equal(errors.length,0,errors.join('\n'));assert.equal((await page.goto('http://localhost:3018/booking')).status(),404);
+ console.log('Browser flow passed: no password or session, light/dark contrast >=4.5:1, exact 30-minute boxes, six fields, demo/interview colours, two bookings, reschedule release, cancel isolation, timezone, 320/390/1440px layouts, and no extra pages.');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{global.fetch=actualFetch;if(browser)await browser.close();if(server)server.kill();if(database)await database.close();});

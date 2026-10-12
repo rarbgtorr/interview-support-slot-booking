@@ -1,6 +1,6 @@
 # Simple Interview Support Slot Manager
 
-One mobile-first page at `/`, headed **INTERVIEW SLOT BOOKING**, with a simple calendar and 30-minute boxes. The root keeps administrator password login. Separate member, booking, customer, and follow-up pages are removed. No emails are sent.
+One mobile-first page at `/`, headed **INTERVIEW SLOT BOOKING**, with a simple calendar and 30-minute boxes. The calendar opens immediately without a password. Anyone with the link can view and manage bookings. Separate member, booking, customer, and follow-up pages are removed. No emails are sent.
 
 ## How to use it
 
@@ -45,8 +45,6 @@ Set server variables in Netlify, available to Functions in the Production deploy
 |---|---|
 | `SUPABASE_URL` | Your app project's HTTPS URL |
 | `SUPABASE_SECRET_KEY` | Server `sb_secret_...` key |
-| `ADMIN_PASSWORD` | Login password, at least 12 characters |
-| `ADMIN_JWT_SECRET` | Random signing secret, at least 32 characters |
 
 Legacy `SUPABASE_SERVICE_ROLE_KEY` is supported instead of the modern secret. Never commit real credentials. Redeploy after variable changes. No email or Supabase browser-auth configuration is needed.
 
@@ -68,10 +66,6 @@ npm run build
 
 The test suite runs actual SQL/RPCs against isolated PGlite and tests capacity, idempotency, exact selected minutes, member fields, cancellation/rescheduling isolation, stale edits, permissions, and preservation of older bookings. `tests/browser-flow.cjs` additionally requires Playwright and Chromium and tests the UI with real handlers and SQL while adapting only the Supabase REST transport. Set `QA_CHROMIUM_EXECUTABLE` for a custom browser; screenshots are optional with `QA_SCREENSHOT_DIR`.
 
-All reads and writes remain administrator-only. Database roles `anon` and `authenticated` have no booking-table access; RLS is enabled. Private server functions use explicitly granted service-role access. A shared transaction lock serializes reservation changes, and the date/minute/place primary key enforces two-place capacity. Booking history is retained on cancellation.
+The booking HTTP functions allow public reads and writes, as requested. Database credentials remain server-only. Database roles `anon` and `authenticated` have no booking-table access; RLS is enabled. Private server functions use explicitly granted service-role access. A shared transaction lock serializes reservation changes, and the date/minute/place primary key enforces two-place capacity. Booking history is retained on cancellation.
 
 Reference UI (unchanged): https://github.com/rarbgtorr/slot-booking-app
-
-## Deployment version
-
-The live site was still serving the older customer-manager commit `1b101298` when these changes were requested. The new page must be deployed from the latest `main`; seeing Customer Manager, service interest, or one-hour demo controls means that older deployment is still being served. Browser refresh alone cannot publish newer code.

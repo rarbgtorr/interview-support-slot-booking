@@ -60,9 +60,7 @@ h2{font-size:18px;margin:3px 0 10px}
 .error{font-size:12px;line-height:1.5;min-height:16px}
 .empty{grid-column:1/-1;border:1px dashed #e2e8f0;padding:20px;text-align:center;color:#64748b;border-radius:12px;font-size:13px}
 .primary{width:100%;border:0;background:var(--dark);color:white;font-weight:800;border-radius:14px;min-height:48px;padding:14px 16px}
-.login{margin:40px auto;max-width:450px}
-.login form{margin-top:18px}
-.login form,form{display:grid;gap:13px}
+form{display:grid;gap:13px}
 label{display:grid;gap:6px;font-size:12px;font-weight:800}
 input,select{width:100%;min-width:0;border:1px solid var(--line);border-radius:13px;min-height:48px;padding:13px;font-size:16px;background:white;color:var(--text)}
 input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
@@ -107,3 +105,51 @@ h1{line-height:1.3;max-width:280px}
 }
 
 .slot-box:active{transform:scale(.99)}
+
+/* Explicit theme colors keep booking types readable in either phone theme. */
+:root{color-scheme:light dark;--surface-soft:#f1f5f9;--subtle-text:#475569;--available-bg:#ecfdf3;--available-border:#86efac;--available-text:#166534;--demo-bg:#f3e8ff;--demo-border:#7c3aed;--demo-text:#5b21b6;--demo-solid:#6d28d9;--interview-bg:#fff1e6;--interview-border:#ea580c;--interview-text:#9a3412;--interview-solid:#c2410c;--button-bg:#0f172a;--button-text:#fff}
+.topbar{padding:18px 16px;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:13px;min-width:0}
+.brand-mark{flex:none;width:48px;height:48px;display:grid;place-items:center;border-radius:15px;color:#fff;background:linear-gradient(135deg,#4338ca,#0e7490);box-shadow:0 6px 16px rgba(67,56,202,.18)}
+.brand-mark svg{width:28px;height:28px}
+.topbar h1{max-width:unset;margin:0;font-size:clamp(18px,4.7vw,24px);font-weight:850;letter-spacing:.4px;line-height:1.3;color:#312e81;background:linear-gradient(110deg,#3730a3,#0e7490);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.day,.slot-box{color:var(--text)}
+.day.selected,.primary,.period-tabs button[aria-selected=true]{background:var(--button-bg);color:var(--button-text);border-color:var(--button-bg)}
+.icon,.close{background:var(--surface-soft);color:var(--text)}
+.quiet{background:var(--card);color:var(--text)}
+.period-tabs button{background:var(--surface-soft);color:var(--text);border-color:var(--line)}
+.hint,.eyebrow,.legend,dt,.slot-local-date{color:var(--muted)}
+.weekdays span{color:var(--subtle-text)}
+.slot-box{background:var(--available-bg);border-color:var(--available-border);border-width:2px}
+.slot-count{color:var(--available-text)}
+.slot-box.blocked,.slot-box.past{background:var(--surface-soft);border-color:var(--line)}
+.slot-box.demo{background:var(--demo-bg);border-color:var(--demo-border)}
+.slot-box.interview{background:var(--interview-bg);border-color:var(--interview-border)}
+.slot-box.mixed{background:linear-gradient(135deg,var(--demo-bg) 50%,var(--interview-bg) 50%);border-color:var(--demo-border);border-right-color:var(--interview-border);border-bottom-color:var(--interview-border)}
+.slot-box.demo .slot-count{color:var(--demo-text)}
+.slot-box.interview .slot-count{color:var(--interview-text)}
+.slot-box.mixed .slot-count,.slot-box.blocked .slot-count,.slot-box.past .slot-count{color:var(--subtle-text)}
+.member-pill.demo{background:var(--demo-solid);color:#fff;font-weight:700;border:1px solid transparent}
+.member-pill.interview{background:var(--interview-solid);color:#fff;font-weight:700;border:1px solid transparent}
+.demo-dot{background:var(--demo-border)}
+.interview-dot{background:var(--interview-border)}
+.booking-card.demo{background:var(--demo-bg);border-color:var(--demo-border)}
+.booking-card.interview{background:var(--interview-bg);border-color:var(--interview-border)}
+.booking-kind{color:var(--subtle-text)}
+.selected-time{color:var(--demo-text)}
+input,select,dialog{background:var(--card);color:var(--text);border-color:var(--line)}
+.danger,.quiet.danger,.error,.message.error{color:#b91c1c}
+.reschedule-banner{background:var(--demo-bg);border-color:var(--demo-border)}
+#saveBooking{box-shadow:0 -5px 10px var(--card)}
+@media(prefers-color-scheme:dark){
+ :root{--bg:#0b1220;--card:#111c2e;--text:#f1f5f9;--muted:#b2c0d3;--line:#334155;--surface-soft:#1d2b40;--subtle-text:#d5deeb;--green:#4ade80;--available-bg:#102c25;--available-border:#4ade80;--available-text:#86efac;--demo-bg:#2e2055;--demo-border:#c4b5fd;--demo-text:#e9d5ff;--demo-solid:#6d28d9;--interview-bg:#422b17;--interview-border:#fdba74;--interview-text:#fed7aa;--interview-solid:#9a3412;--button-bg:#c7d2fe;--button-text:#172554;--accent:#a5b4fc;--shadow:0 12px 35px rgba(0,0,0,.2)}
+ .topbar h1{color:#c7d2fe;background:linear-gradient(110deg,#c7d2fe,#67e8f9);background-clip:text;-webkit-background-clip:text}
+ .member-pill.demo{border-color:#c4b5fd}.member-pill.interview{border-color:#fdba74}
+ .message{color:#86efac}.danger,.quiet.danger,.error,.message.error{color:#fca5a5}
+ .empty{border-color:var(--line);color:var(--muted)}
+ input:focus,select:focus{box-shadow:0 0 0 3px rgba(165,180,252,.2)}
+ dialog::backdrop{background:rgba(0,0,0,.65)}
+}
+@media(max-width:360px){.topbar{padding:15px 12px}.brand{gap:10px}.brand-mark{width:42px;height:42px;border-radius:13px}.brand-mark svg{width:25px;height:25px}}
+
+.available-dot{background:var(--green)}

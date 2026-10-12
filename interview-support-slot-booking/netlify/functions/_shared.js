@@ -1,16 +1,9 @@
 'use strict';
-const crypto=require('node:crypto');
 const S=require('../../public/schedule');
 class HttpError extends Error { constructor(status,message){super(message);this.status=status;} }
 class DatabaseError extends Error { constructor(code,message){super(message);this.code=code;} }
 function response(status,body){return {statusCode:status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'},body:JSON.stringify(body)};}
 function body(event){try{if((event.body||'').length>12000)throw new Error();const parsed=JSON.parse(event.body||'{}');if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error();return parsed;}catch{throw new HttpError(400,'Invalid request body.');}}
-function bearer(event){return String(event.headers?.authorization||event.headers?.Authorization||'').replace(/^Bearer\s+/i,'').trim();}
-function secret(){const value=process.env.ADMIN_JWT_SECRET;if(!value||value.length<32)throw new HttpError(503,'Administrator login is not configured.');return value;}
-function signAdmin(){const head=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');const payload=Buffer.from(JSON.stringify({aud:'interview-support-admin',scope:'admin',exp:Math.floor(Date.now()/1000)+28800})).toString('base64url');const signed=head+'.'+payload;return signed+'.'+crypto.createHmac('sha256',secret()).update(signed).digest('base64url');}
-function admin(event){
-  try{const [head,payload,signature,...extra]=bearer(event).split('.');if(extra.length||!head||!payload||!signature)throw new Error();const expected=crypto.createHmac('sha256',secret()).update(head+'.'+payload).digest();const received=Buffer.from(signature,'base64url');if(received.length!==expected.length||!crypto.timingSafeEqual(expected,received))throw new Error();const h=JSON.parse(Buffer.from(head,'base64url'));const p=JSON.parse(Buffer.from(payload,'base64url'));if(h.alg!=='HS256'||p.aud!=='interview-support-admin'||p.scope!=='admin'||!Number.isFinite(p.exp)||p.exp<=Date.now()/1000)throw new Error();}catch{throw new HttpError(401,'Please log in as administrator.');}
-}
 async function db(path,{method='GET',query,body:payload}={}){
   const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!url||!key)throw new HttpError(503,'Booking service is not configured yet.');
@@ -24,8 +17,8 @@ async function db(path,{method='GET',query,body:payload}={}){
   return data;
 }
 const rpc=(name,payload)=>db('rpc/'+name,{method:'POST',body:payload});
-function wrap(method,handler,adminRequired=false){return async event=>{
-  try{if(event.httpMethod!==method)return response(405,{error:'Method not allowed.'});if(adminRequired)admin(event);return await handler(event);}
+function wrap(method,handler){return async event=>{
+  try{if(event.httpMethod!==method)return response(405,{error:'Method not allowed.'});return await handler(event);}
   catch(error){if(error instanceof HttpError)return response(error.status,{error:error.message});
     const code=error.code;
     if(code==='23505')return response(409,{error:'This slot is full or blocked. Choose another slot.'});
@@ -54,4 +47,4 @@ async function allRows(table,select='*'){
   const rows=[];const limit=1000;
   for(let offset=0;;offset+=limit){const page=await db(table,{query:{select,order:'created_at.asc,id.asc',limit:String(limit),offset:String(offset)}});if(!Array.isArray(page))throw new HttpError(502,'Invalid database response.');rows.push(...page);if(page.length<limit)return rows;}
 }
-module.exports={S,HttpError,response,body,admin,db,rpc,wrap,signAdmin,bookingId,validateAppointment,revision,monthRange,allRows};
+module.exports={S,HttpError,response,body,db,rpc,wrap,bookingId,validateAppointment,revision,monthRange,allRows};
