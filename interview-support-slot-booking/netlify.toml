@@ -10,24 +10,13 @@
   node_bundler = "esbuild"
   included_files = ["public/schedule.js"]
 
-[functions.reminders]
-  schedule = "*/5 * * * *"
-
-[[redirects]]
-  from = "/member"
-  to = "/member.html"
-  status = 200
-[[redirects]]
-  from = "/member/"
-  to = "/member.html"
-  status = 200
 [[redirects]]
   from = "/admin"
-  to = "/admin.html"
+  to = "/index.html"
   status = 200
 [[redirects]]
   from = "/admin/"
-  to = "/admin.html"
+  to = "/index.html"
   status = 200
 
 [[headers]]

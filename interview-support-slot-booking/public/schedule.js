@@ -5,12 +5,12 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   const TIMEZONE = 'Asia/Kolkata';
-  const START = 420, END = 1560, STEP = 30;
+  const START = 420, END = 1620, STEP = 30;
   const GROUPS = [
     {id:'morning', label:'Morning', from:420, to:720},
     {id:'afternoon', label:'Afternoon', from:720, to:1020},
     {id:'evening', label:'Evening', from:1020, to:1260},
-    {id:'night', label:'Night', from:1260, to:1560}
+    {id:'night', label:'Night', from:1260, to:1620}
   ];
   const STARTS = Array.from({length:(END-START)/STEP}, (_,i)=>START+i*STEP);
   function validDate(date) {
@@ -35,8 +35,8 @@
   }
   function currentServiceDate(now=new Date()) {
     const today = dateKey(now);
-    // The previous operating day still has late-night slots before 2 AM IST.
-    return new Date(now).getTime() < instant(today,120).getTime() ? addDays(today,-1) : today;
+    // The previous operating day still has late-night slots before 3 AM IST.
+    return new Date(now).getTime() < instant(today,180).getTime() ? addDays(today,-1) : today;
   }
   function instant(date, minute) {
     return new Date(new Date(date+'T00:00:00+05:30').getTime()+minute*60000);
@@ -62,7 +62,7 @@
       const row=day?.[m];
       if(!row)continue;
       const status=typeof row==='string'?row:row.status;
-      if(ignoreBookingId && row.booking?.id===ignoreBookingId)continue;
+      if(ignoreBookingId && (row.appointmentId===ignoreBookingId || row.booking?.id===ignoreBookingId))continue;
       if(status==='booked'||status==='blocked')return status;
     }
     return 'available';

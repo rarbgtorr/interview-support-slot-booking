@@ -1,8 +1,8 @@
 {
   "name": "interview-support-slot-booking",
   "private": true,
-  "version": "1.0.0",
-  "description": "Interview support booking with 30/60-minute slots and member/admin management.",
+  "version": "2.0.0",
+  "description": "Admin-only customer management, demo and interview scheduling.",
   "engines": {
     "node": ">=20"
   },
@@ -10,9 +10,6 @@
     "test": "node --test tests/*.test.js",
     "dev": "node scripts/dev.js",
     "build": "node scripts/check.js"
-  },
-  "dependencies": {
-    "nodemailer": "10.0.15"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8"

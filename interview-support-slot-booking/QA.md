@@ -1,14 +1,17 @@
-# Validation
+# Verification — admin-only customer manager
 
-Validated on 7 October 2026.
+Completed locally on 12 October 2026:
 
-- `npm run build`: passed JavaScript syntax and public asset checks.
-- `npm test`: 25 passing tests, including actual SQL/RPC execution in isolated PGlite PostgreSQL.
-- Runtime dependency audit: no reported vulnerabilities.
-- Chromium UI checks: passed at 390px mobile and 1440px desktop widths with mock API/auth responses. No page JavaScript errors were observed.
+- `npm test`: **28 passing tests**.
+- `npm run build`: JavaScript syntax and public asset checks passed.
+- `git diff --check`: no whitespace errors.
+- `tests/browser-flow.cjs`: full Chromium workflow passed with the real handlers and actual schema/RPCs in isolated PGlite. Only the Supabase REST transport was adapted for the test database.
+- Browser flow covers adding/editing/searching a customer, one-hour demo creation, interest gating, separate 30-minute interview, unavailable demo halves, rescheduling to 60 minutes, timezone conversion, latest start ending at 3 AM, whole-day block/unblock, cancellation, follow-up completion, history, and clearing private UI on logout.
+- Layout checked at **390 × 844** and **1440 × 1100**, including screenshot inspection and no horizontal overflow.
+- Browser flow reported no JavaScript page errors.
+- API tests verify administrator authentication before database access, valid/expired/tampered tokens, input validation, private records, no email path, and paging past the default 1000-row response cap.
+- SQL tests cover duplicate formatted phones, interest eligibility, fixed demo duration, shared demo/interview capacity, conflict rollback, stale revisions, status transitions, idempotent retries, 3 AM closing, and next-day dates.
 
-The UI checks covered grouped slot counts, 30/60-minute selection, next-day dates, timezone conversion, booking submission, disabled conflicting pairs, member OTP interface, rescheduling with prefilled fields, and administrator counts that count a 60-minute booking once.
+Limits: no live Supabase project was configured or changed, and no live Netlify deployment was exercised. PGlite queues requests on a single connection; the competing-request test does not substitute for a production multi-connection load test. Netlify's admin-login rate-limit acceptance should be verified in deployment logs.
 
-The SQL tests covered unavailable second halves, rollback after failed rescheduling, overlap with a booking's own old slots, cancellation/rebooking, whole-day blocking without overwriting bookings, idempotent request retries, competing reservations, past/closing-time validation and private table/function grants.
-
-Not yet verified against live services: a newly configured Supabase project, real OTP emails, Gmail confirmation/reminder delivery, Netlify deployment and deployed rate-limit acceptance. Those checks require the new app's configuration. The reference repository and its live services were not changed.
+The new `support_*` tables do not import older `interview_*` records automatically. Reconcile any real earlier bookings before switching the live app.

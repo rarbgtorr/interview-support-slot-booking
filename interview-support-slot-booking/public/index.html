@@ -1,99 +1,21 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0f172a">
-  <title>Interview Support · Book Your Slot</title>
-  <meta name="description" content="Book a 30- or 60-minute interview support slot. Choose your timezone and manage your bookings online.">
-  <link rel="stylesheet" href="style.css">
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f172a"><title>Interview Support · Customer Manager</title><link rel="stylesheet" href="style.css"></head>
 <body>
-  <main class="app-shell">
-    <header class="topbar">
-      <div><p class="eyebrow">SLOT BOOKING</p><h1>Book your time</h1></div>
-      <a class="admin-link" href="/member">My bookings</a>
-    </header>
-
-    <section class="hero-card">
-      <div><span class="status-dot"></span><span>Live availability</span></div>
-      <h2>Book your interview support slot.</h2>
-      <p>Select a date and reserve a 30- or 60-minute slot.</p>
-    </section>
-
-    <section id="rescheduleNotice" class="calendar-card hidden"><p class="eyebrow">RESCHEDULE BOOKING</p><p id="rescheduleText"></p><a class="admin-link" href="/member">Back to my bookings</a></section>
-    <section class="calendar-card">
-      <div class="calendar-heading">
-        <button id="prevMonth" class="icon-btn" aria-label="Previous month">‹</button>
-        <div><p class="month-label" id="monthLabel"></p><small id="selectedDateLabel"></small></div>
-        <button id="nextMonth" class="icon-btn" aria-label="Next month">›</button>
-      </div>
-      <div class="weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
-      <div id="calendarGrid" class="calendar-grid"></div>
-      <div class="legend"><span><i class="available-dot"></i> Available</span><span><i class="booked-dot"></i> Booked</span></div>
-    </section>
-
-    <section class="slots-section">
-      <div class="section-title">
-        <div><p class="eyebrow">SELECT A TIME</p><h2 id="slotsTitle">Available slots</h2></div>
-        <span class="date-pill" id="slotDatePill"></span>
-      </div>
-      <div class="timezone-box">
-        <label id="timezoneLabel">Showing times in Asia/Kolkata</label>
-        <div class="timezone-row">
-          <select id="timezoneRegion" aria-label="Timezone compatibility" hidden tabindex="-1">
-            <option value="">Select region</option>
-          </select>
-          <select id="timezoneSelect" aria-label="Select time zone">
-            <option value="Asia/Kolkata">Asia/Kolkata</option>
-          </select>
-        </div>
-        <small id="timezoneHint" aria-hidden="true"></small>
-      </div>
-      <div class="duration-box"><p class="eyebrow">BOOKING DURATION</p><div id="durationOptions" class="segmented" role="group" aria-label="Booking duration"><button type="button" data-duration="30" aria-pressed="true">30 minutes · 1 slot</button><button type="button" data-duration="60" aria-pressed="false">60 minutes · 2 slots</button></div></div>
-      <p id="groupHint" class="control-hint">Groups follow IST. Slot dates and times follow your selected timezone.</p>
-      <div id="periodTabs" class="period-tabs" role="tablist" aria-label="Time of day"></div>
-      <p id="availabilityMessage" class="control-hint" role="status" aria-live="polite"></p>
-      <div id="slots" class="slots" role="tabpanel" aria-label="Available times"></div>
-    </section>
-  </main>
-
-  <div id="bookingModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalSlot">
-    <div class="modal-backdrop" data-close="true"></div>
-    <section class="modal-card">
-      <button class="close-btn" data-close="true" type="button" aria-label="Close booking form">×</button>
-      <p class="eyebrow">CONFIRM BOOKING</p>
-      <h2 id="modalSlot"></h2>
-      <p class="modal-subtitle">Complete your details to reserve this slot.</p>
-      <form id="bookingForm">
-        <label>Interview role / technology<input id="interviewRole" maxlength="150" required placeholder="e.g. GCP Data Engineer, Java, Networking"></label>
-        <label>Company (optional)<input id="company" maxlength="150" placeholder="Company name"></label>
-        <label>Interview round (optional)<input id="interviewRound" maxlength="100" placeholder="e.g. Technical L1, L2, HR"></label>
-        <label>Notes (optional)<textarea id="notes" maxlength="1000" rows="2" placeholder="Anything you would like us to know"></textarea></label>
-        <label>Name<input id="name" maxlength="100" required autocomplete="name" placeholder="Your full name"></label>
-        <label>Email<input id="email" maxlength="254" type="email" required autocomplete="email" placeholder="you@example.com"></label>
-        <label>WhatsApp<input id="phone" maxlength="30" type="tel" required autocomplete="tel" placeholder="+91 XXXXX XXXXX"></label>
-        <label>Selected slot<input id="bookingSlotDisplay" readonly></label>
-        <label>Time zone<input id="bookingTimezoneDisplay" readonly></label>
-        <input type="hidden" id="bookingDate"><input type="hidden" id="bookingStart"><input type="hidden" id="bookingTimezone">
-        <button class="primary-btn" id="confirmBookingBtn" type="submit">Confirm booking</button>
-      <p id="bookingProgress" class="booking-progress" aria-live="polite"></p>
-      </form>
-      <p id="bookingError" class="error"></p>
-    </section>
-  </div>
-
-  <div id="successModal" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <section class="modal-card success-card">
-      <div class="success-icon">✓</div><p class="eyebrow">BOOKING CONFIRMED</p><h2>Your slot is reserved</h2>
-      <div id="successDetails" class="success-details"></div><button class="primary-btn" id="successClose">Done</button>
-    </section>
-  </div>
-  <script src="schedule.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-  <script src="member-auth.js"></script>
-  <script src="script.js"></script>
-</body>
-</html>
-
+<main class="app-shell manager-shell">
+<header class="topbar"><div><p class="eyebrow">INTERVIEW SUPPORT</p><h1>Customer manager</h1></div><div class="header-actions"><button id="refreshButton" class="admin-link hidden" type="button">Refresh</button><button id="adminLogout" class="admin-link hidden" type="button">Logout</button></div></header>
+<section id="loginCard" class="login-card"><p class="eyebrow">OWNER ACCESS</p><h2>Welcome back</h2><p class="control-hint">Manage your customers, demos, interviews, and follow-ups in one place.</p><form id="loginForm"><label for="adminPassword">Administrator password</label><input id="adminPassword" type="password" required autocomplete="current-password" maxlength="200"><button class="primary-btn" type="submit">Continue</button></form><p id="loginError" class="error" role="alert"></p></section>
+<section id="adminApp" class="hidden">
+<section class="hero-card"><div><span class="status-dot"></span>YOUR DAY, ORGANIZED</div><h2>From the first demo<br>to the next interview.</h2><p>One customer record. Every appointment and follow-up.</p><div class="hero-actions"><button id="newCustomerButton" class="hero-button" type="button">+ Add customer</button><button id="quickDemoButton" class="hero-button secondary" type="button">Book demo · 1 hour</button><button id="quickInterviewButton" class="hero-button secondary" type="button">Book interview</button></div></section>
+<div class="workspace-toolbar"><nav class="workspace-nav" aria-label="Management views"><button data-view="today" aria-current="page">Today</button><button data-view="customers">Customers</button><button data-view="calendar">Calendar</button><button data-view="followups">Follow-ups <span id="followupBadge">0</span></button></nav><label class="display-zone">Display timezone<select id="displayTimezone" aria-label="Display timezone"></select></label></div>
+<p id="appMessage" class="app-message" role="status" aria-live="polite"></p>
+<section id="todayView" class="workspace-view"><div class="admin-stats"><div><strong id="demoCount">0</strong><span>Demos this operating day</span></div><div><strong id="interviewCount">0</strong><span>Interviews this operating day</span></div><div><strong id="followupCount">0</strong><span>Follow-ups due</span></div></div><div class="section-title"><div><p class="eyebrow">TODAY'S SCHEDULE</p><h2 id="todayTitle"></h2></div><button class="small-btn" id="openCalendarButton">Open calendar</button></div><p class="control-hint">An operating day runs from 7 AM IST to 3 AM IST the following day. Appointment labels use your display timezone.</p><div id="todayAppointments" class="appointment-list"></div><section class="calendar-card"><div class="section-title"><div><p class="eyebrow">NEXT ACTIONS</p><h2>Customers to contact</h2></div></div><div id="todayFollowups" class="customer-list"></div></section></section>
+<section id="customersView" class="workspace-view hidden"><div class="section-title"><div><p class="eyebrow">YOUR CUSTOMER RECORDS</p><h2>Customers <span id="customerCount" class="count-label"></span></h2></div></div><div class="filter-row"><label class="search-field">Search<input id="customerSearch" type="search" placeholder="Name or phone number" autocomplete="off"></label><label>Stage<select id="stageFilter"><option value="">All stages</option></select></label></div><div id="customerList" class="customer-list"></div></section>
+<section id="calendarView" class="workspace-view hidden"><div class="calendar-layout"><section class="calendar-card"><div class="calendar-heading"><button id="calendarPrev" class="icon-btn" aria-label="Previous month">‹</button><div><p class="month-label" id="calendarMonth"></p><small>Operating dates · IST</small></div><button id="calendarNext" class="icon-btn" aria-label="Next month">›</button></div><div class="weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div id="calendarGrid" class="calendar-grid"></div><div class="legend"><span><i class="available-dot"></i>Available</span><span><i class="booked-dot"></i>Reserved</span><span><i class="blocked-dot"></i>Blocked</span></div><div class="calendar-controls"><label>Appointment type<select id="calendarType"><option value="demo">Demo · 60 minutes</option><option value="interview">Interview</option></select></label><label id="calendarDurationLabel" class="hidden">Interview duration<select id="calendarDuration"><option value="30">30 minutes</option><option value="60">60 minutes</option></select></label></div><p class="control-hint">Demos always reserve two consecutive half-hours. Interviews reserve one or two.</p><div class="day-actions"><button id="blockDay" class="small-btn danger">Block available day slots</button><button id="unblockDay" class="small-btn success">Unblock day</button></div></section><section class="slots-section"><div class="section-title"><div><p class="eyebrow">SHARED AVAILABILITY</p><h2 id="calendarTitle"></h2></div></div><div id="calendarPeriods" class="period-tabs" role="tablist" aria-label="Calendar time of day"></div><p id="calendarMessage" class="control-hint" role="status"></p><div id="calendarSlots" class="slots" role="tabpanel" aria-label="Calendar slots"></div></section></div><section class="calendar-card"><h2 class="compact-heading">Appointments on this operating day</h2><div id="calendarAppointments" class="appointment-list"></div></section></section>
+<section id="followupsView" class="workspace-view hidden"><div class="section-title"><div><p class="eyebrow">KEEP THE CONVERSATION MOVING</p><h2>Follow-ups</h2></div></div><p class="control-hint">Follow-up dates use IST. Open a customer to add notes, choose a new date, or clear a completed follow-up.</p><section class="calendar-card"><h3>Due and overdue</h3><div id="dueFollowups" class="customer-list"></div></section><section class="calendar-card"><h3>Upcoming follow-ups</h3><div id="upcomingFollowups" class="customer-list"></div></section><section class="calendar-card"><h3>Interested · awaiting interview booking</h3><div id="interestedCustomers" class="customer-list"></div></section><section class="calendar-card"><h3>Follow-up needed · no date set</h3><div id="undatedFollowups" class="customer-list"></div></section></section>
+</section>
+</main>
+<dialog id="customerDialog" class="manager-dialog"><div class="modal-card"><button class="close-btn" type="button" data-close="customerDialog" aria-label="Close customer">×</button><p class="eyebrow">CUSTOMER PROFILE</p><h2 id="customerDialogTitle">Add customer</h2><p class="modal-subtitle">Keep contact details, decisions, and follow-ups together.</p><form id="customerForm"><div class="form-grid"><label>Name<input id="customerName" required maxlength="100" autocomplete="name"></label><label>Phone / WhatsApp<input id="customerPhone" type="tel" required maxlength="30" placeholder="+91 9876543210" autocomplete="tel"></label><label>Service interest<input id="customerService" maxlength="150" placeholder="e.g. GCP interview support"></label><label>Customer timezone<select id="customerTimezone"></select></label><label>Customer stage<select id="customerStage"></select></label><label>Follow-up date · IST<input id="customerFollowUp" type="date"></label></div><label>Customer notes<textarea id="customerNotes" rows="3" maxlength="3000" placeholder="Demo feedback, requirements, and next steps"></textarea></label><p id="customerError" class="error" role="alert"></p><button id="saveCustomerButton" class="primary-btn" type="submit">Save customer</button></form><div id="customerProfileActions" class="profile-actions hidden"><button id="profileDemo" class="small-btn">Book demo · 1 hour</button><button id="profileInterview" class="small-btn">Book interview</button></div><p id="profileHint" class="control-hint"></p><section id="customerHistorySection" class="hidden"><h3>Appointment history</h3><div id="customerHistory" class="appointment-list"></div></section></div></dialog>
+<dialog id="appointmentDialog" class="manager-dialog booking-dialog"><div class="modal-card"><button class="close-btn" type="button" data-close="appointmentDialog" aria-label="Close appointment">×</button><p class="eyebrow">APPOINTMENT</p><h2 id="appointmentDialogTitle">Book demo</h2><form id="appointmentForm"><label>Customer<select id="appointmentCustomer" required><option value="">Select customer</option></select></label><button id="appointmentAddCustomer" class="small-btn" type="button">+ Add a new customer first</button><p id="appointmentCustomerHint" class="control-hint"></p><div class="form-grid"><label>Type<select id="appointmentType"><option value="demo">Demo · 1 hour</option><option value="interview">Interview</option></select></label><label>Duration<select id="appointmentDuration"><option value="60">60 minutes</option><option value="30">30 minutes</option></select></label><label>Operating date · IST<input id="appointmentDate" type="date" required></label><label>Customer timezone<select id="appointmentTimezone"></select></label></div><p class="control-hint">Choose an operating date in IST. Slot labels below use the customer's selected timezone; after-midnight slots show their actual date.</p><div id="appointmentPeriods" class="period-tabs" role="tablist" aria-label="Appointment time of day"></div><p id="appointmentAvailabilityMessage" class="control-hint" role="status"></p><div id="appointmentSlots" class="slots booking-slots" role="tabpanel" aria-label="Choose appointment time"></div><p id="appointmentSelection" class="selection-summary" role="status"></p><div id="interviewFields" class="form-grid hidden"><label>Company<input id="appointmentCompany" maxlength="150"></label><label>Role<input id="appointmentRole" maxlength="150"></label><label>Interview round<input id="appointmentRound" maxlength="100" placeholder="e.g. Technical L2"></label></div><label>Appointment notes<textarea id="appointmentNotes" rows="2" maxlength="2000"></textarea></label><p id="appointmentError" class="error" role="alert"></p><button id="saveAppointmentButton" class="primary-btn" type="submit">Save appointment</button></form></div></dialog>
+<script src="schedule.js"></script><script src="admin.js"></script>
+</body></html>

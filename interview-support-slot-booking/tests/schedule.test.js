@@ -1,9 +1,9 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const S=require('../public/schedule');
-test('38 half-hour slots from 7 AM to 2 AM, partitioned without gaps',()=>{
-  assert.equal(S.STARTS.length,38);assert.equal(S.STARTS[0],420);assert.equal(S.STARTS.at(-1),1530);
-  assert.deepEqual(S.GROUPS.map(g=>S.STARTS.filter(m=>m>=g.from&&m<g.to).length),[10,10,8,10]);
+test('40 half-hour slots from 7 AM to 3 AM, partitioned without gaps',()=>{
+  assert.equal(S.STARTS.length,40);assert.equal(S.STARTS[0],420);assert.equal(S.STARTS.at(-1),1590);
+  assert.deepEqual(S.GROUPS.map(g=>S.STARTS.filter(m=>m>=g.from&&m<g.to).length),[10,10,8,12]);
   assert.equal(S.STARTS.filter(m=>S.GROUPS.filter(g=>m>=g.from&&m<g.to).length!==1).length,0);
 });
 test('after midnight belongs to the next actual date, including year rollover',()=>{
@@ -11,14 +11,14 @@ test('after midnight belongs to the next actual date, including year rollover',(
   assert.equal(S.dateKey(S.instant('2030-12-31',1440)),'2031-01-01');
   assert.equal(S.dateKey(S.instant('2030-12-31',1530)),'2031-01-01');
 });
-test('previous service date remains selectable before 2 AM IST',()=>{
+test('previous service date remains selectable before 3 AM IST',()=>{
   assert.equal(S.currentServiceDate(new Date('2031-01-01T01:00:00+05:30')),'2030-12-31');
-  assert.equal(S.currentServiceDate(new Date('2031-01-01T02:00:00+05:30')),'2031-01-01');
+  assert.equal(S.currentServiceDate(new Date('2031-01-01T03:00:00+05:30')),'2031-01-01');
 });
 test('60-minute booking crosses groups and midnight, but cannot overrun closing',()=>{
-  for(const minute of [690,990,1230,1410,1500])assert.equal(S.validSelection('2030-01-01',minute,60,0),true);
-  assert.equal(S.validSelection('2030-01-01',1530,60,0),false);
-  assert.equal(S.validSelection('2030-01-01',1530,30,0),true);
+  for(const minute of [690,990,1230,1410,1560])assert.equal(S.validSelection('2030-01-01',minute,60,0),true);
+  assert.equal(S.validSelection('2030-01-01',1590,60,0),false);
+  assert.equal(S.validSelection('2030-01-01',1590,30,0),true);
 });
 test('either unavailable half disables a 60-minute booking',()=>{
   assert.equal(S.state({630:'booked'},600,60,'2030-01-01',0),'booked');
