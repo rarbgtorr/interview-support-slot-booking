@@ -54,7 +54,7 @@ Use the Supabase project for this **new app**, not the reference app's project.
 
 ## Netlify setup
 
-This GitHub repository currently contains the app in the `interview-support-slot-booking` subfolder. Set the Netlify **base directory** to `interview-support-slot-booking`. The checked-in `netlify.toml` then supplies:
+This GitHub repository currently contains the app in the `interview-support-slot-booking` subfolder. The repository-root `netlify.toml` selects `interview-support-slot-booking` as the base directory. For an existing project, confirm the Netlify **base directory** is `interview-support-slot-booking` and redeploy through the Git build pipeline; uploading the entire repository as static files will not deploy the APIs. The configuration supplies:
 
 - Build command: `npm run build`
 - Publish directory: `public`
