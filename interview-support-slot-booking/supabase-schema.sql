@@ -346,10 +346,10 @@ begin
   select 1 from public.support_slot_reservations where service_date=d and start_minute=m and public.support_slot_reservations.seat=seats.seat and appointment_id is distinct from p_id) order by seats.seat limit 1;
  if chosen is null then raise exception using errcode='23505',message='This slot already has two bookings'; end if;
  if p_id is null then
-  insert into public.support_appointments(customer_id,booking_type,service_date,start_minute,duration_minutes,starts_at,ends_at,timezone,company,round,member_name,whatsapp,experience)
-  values(null,typ,d,m,30,stamp,stamp+interval '30 minutes',zone,trim(p_data->>'company'),trim(p_data->>'round'),nm,ph,exp) returning * into v;
+  insert into public.support_appointments(customer_id,booking_type,service_date,start_minute,duration_minutes,starts_at,ends_at,timezone,company,round,member_name,whatsapp,experience,notes)
+  values(null,typ,d,m,30,stamp,stamp+interval '30 minutes',zone,trim(p_data->>'company'),trim(p_data->>'round'),nm,ph,exp,coalesce(p_data->>'notes','')) returning * into v;
  else
-  update public.support_appointments set service_date=d,start_minute=m,duration_minutes=30,starts_at=stamp,ends_at=stamp+interval '30 minutes',timezone=zone,company=trim(p_data->>'company'),round=trim(p_data->>'round'),member_name=nm,whatsapp=ph,experience=exp,revision=revision+1,updated_at=now() where id=p_id returning * into v;
+  update public.support_appointments set service_date=d,start_minute=m,duration_minutes=30,starts_at=stamp,ends_at=stamp+interval '30 minutes',timezone=zone,company=trim(p_data->>'company'),round=trim(p_data->>'round'),member_name=nm,whatsapp=ph,experience=exp,notes=coalesce(p_data->>'notes',prev.notes,''),revision=revision+1,updated_at=now() where id=p_id returning * into v;
   delete from public.support_slot_reservations where appointment_id=p_id;
  end if;
  insert into public.support_slot_reservations(service_date,start_minute,seat,kind,appointment_id) values(d,m,chosen,'booked',v.id);

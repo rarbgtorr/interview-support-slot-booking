@@ -12,10 +12,11 @@ One mobile-first page at `/`, headed **INTERVIEW SLOT BOOKING**, with a simple c
    - Experience
    - Interview stage (enter Demo where applicable)
    - Member timezone
-3. Save once. Calendar labels always use **IST**, so selecting a member timezone never shifts the selected start time.
+   - Notes (optional, up to 2,000 characters)
+3. Save once. Use **Show slot times in** to convert visible slot times to your chosen timezone. The selected timezone is remembered on your device and becomes the default member timezone for new bookings. Calendar dates, period groups and operating hours remain based on **IST**; timezone selection never shifts the reserved instant.
 4. A booked box shows its type and count: **1/2** is booked with one more place available; **2/2** is full. Demo is purple; interview is orange. A box containing both uses both colours.
 5. Tap a booked box to see either member's details. Use **Book second appointment** while it has one booking.
-6. To reschedule, open the member's booking, choose **Reschedule**, then tap the destination box. Review the prefilled six fields and save. The original place is released only when the new reservation succeeds. Any other booking in the original box remains.
+6. To reschedule, open the member's booking, choose **Reschedule**, then tap the destination box. Review the prefilled member details and notes, then save. The original place is released only when the new reservation succeeds. Any other booking in the original box remains.
 7. Cancel a booking from its details to release only that member's reservation.
 
 Hours: **7 AM IST to 3 AM IST the following day**, with 40 distinct half-hours. Latest start: **2:30 AM**. Groups follow IST. Actual next-day dates are displayed for late-night boxes. Member time is shown separately in the form and booking details.

@@ -38,7 +38,7 @@ function validateAppointment(input){
  if(!['demo','interview'].includes(input.type)||!S.validZone(input.timezone))throw new HttpError(400,'Choose a booking type and valid member timezone.');
  const memberName=textField(input,'memberName',100,true),phone=textField(input,'phone',30,true);
  if(!/^[+()\d\s-]{7,30}$/.test(phone)||!/^\d{7,15}$/.test(phone.replace(/\D/g,'')))throw new HttpError(400,'Enter a valid WhatsApp number with country code.');
- const data={date:input.date,startMinute:input.startMinute,duration:30,type:input.type,requestId:bookingId(input.requestId),timezone:input.timezone,memberName,phone,company:textField(input,'company',150,true),experience:textField(input,'experience',100,true),round:textField(input,'round',100,true)};
+ const data={date:input.date,startMinute:input.startMinute,duration:30,type:input.type,requestId:bookingId(input.requestId),timezone:input.timezone,memberName,phone,company:textField(input,'company',150,true),experience:textField(input,'experience',100,true),round:textField(input,'round',100,true),notes:textField(input,'notes',2000)};
  if(input.id){bookingId(input.id);data.revision=revision(input.revision);}
  return data;
 }
