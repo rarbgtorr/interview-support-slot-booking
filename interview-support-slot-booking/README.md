@@ -1,6 +1,6 @@
 # Simple Interview Support Slot Manager
 
-One mobile-first management page at `/`, with the reference navy/white styling. The root keeps administrator password login. Separate member, booking, customer, and follow-up pages are removed. No emails are sent.
+One mobile-first page at `/`, headed **INTERVIEW SLOT BOOKING**, with a simple calendar and 30-minute boxes. The root keeps administrator password login. Separate member, booking, customer, and follow-up pages are removed. No emails are sent.
 
 ## How to use it
 
@@ -25,15 +25,15 @@ Hours: **7 AM IST to 3 AM IST the following day**, with 40 distinct half-hours. 
 - Every new demo or interview is exactly **30 minutes**.
 - Each half-hour accepts a maximum of **two** independent bookings. A third is rejected by the database.
 - Request retries do not consume a second place.
-- Existing one-hour bookings are retained at their original start/end times and shown across their two actual half-hours. Rescheduling one converts it to the new 30-minute duration and releases its previous halves.
-- Member name, WhatsApp number, company, experience, stage, and timezone are stored per appointment. Reusing a phone number does not overwrite previous booking details.
+- The previous bookings identified by the owner as test data have been cleared. All new demos and interviews are 30 minutes.
+- Member name, WhatsApp number, company, experience, interview stage, and timezone are stored directly in each appointment. No customer profile, service interest, follow-up, or member-status record is created.
 - Existing blocked slots remain unavailable.
 
 ## Database
 
 For a fresh app project, run the full `supabase-schema.sql` in Supabase SQL Editor.
 
-For an existing installation, run `simple-booking-update.sql`. The connected interview-support project has already received this migration. It adds the capacity places and appointment fields, preserves existing reservations, and replaces the reservation RPC. It does not alter the reference app's project.
+For an existing installation, run `simple-booking-update.sql`, then `member-only-booking-update.sql`. Both updates have already been applied to the connected interview-support project. It adds the capacity places and appointment fields, preserves existing reservations, and replaces the reservation RPC. It does not alter the reference app's project.
 
 ## Netlify
 
@@ -71,3 +71,7 @@ The test suite runs actual SQL/RPCs against isolated PGlite and tests capacity, 
 All reads and writes remain administrator-only. Database roles `anon` and `authenticated` have no booking-table access; RLS is enabled. Private server functions use explicitly granted service-role access. A shared transaction lock serializes reservation changes, and the date/minute/place primary key enforces two-place capacity. Booking history is retained on cancellation.
 
 Reference UI (unchanged): https://github.com/rarbgtorr/slot-booking-app
+
+## Deployment version
+
+The live site was still serving the older customer-manager commit `1b101298` when these changes were requested. The new page must be deployed from the latest `main`; seeing Customer Manager, service interest, or one-hour demo controls means that older deployment is still being served. Browser refresh alone cannot publish newer code.

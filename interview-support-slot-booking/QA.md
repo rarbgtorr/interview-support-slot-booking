@@ -7,5 +7,9 @@
 - PGlite serializes requests on one connection; tests do not replace a multi-connection production load test.
 - Existing one-hour demos are preserved, rather than silently shortened.
 
-- `npm test`: 26 passing tests. `npm run build` and `git diff --check` pass.
+- `npm test`: 28 passing tests. `npm run build` and `git diff --check` pass.
 - Applied `simple_half_hour_slots_two_places` to the connected interview-support database. A service-role rollback transaction verified two bookings in one half-hour, rejection of a third, release of one place on reschedule, and no reservation in the earlier 9:30 box. The two existing one-hour demos remain reserved and no temporary test records were retained.
+
+- Member-only save verified in the live database: the booking has a null legacy profile ID and creates no profile row. Verification was rolled back.
+- Cleared the previous testing bookings, reservations, request records, and legacy profile rows in the connected app project, as explicitly requested.
+- New page heading is INTERVIEW SLOT BOOKING; the promotional banner and customer-management fields are absent.
