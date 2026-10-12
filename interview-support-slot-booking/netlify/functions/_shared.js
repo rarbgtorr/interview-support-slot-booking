@@ -52,8 +52,9 @@ function validateAppointment(input){
   if(!S.validSelection(input.date,input.startMinute,input.duration))throw new HttpError(400,'Select a future 30- or 60-minute slot between 7 AM and 3 AM the following day.');
   if(!['demo','interview'].includes(input.type)|| (input.type==='demo'&&input.duration!==60))throw new HttpError(400,'Demos must be 60 minutes. Interviews can be 30 or 60 minutes.');
   if(!S.validZone(input.timezone))throw new HttpError(400,'Select a valid timezone.');
-  const data={date:input.date,startMinute:input.startMinute,duration:input.duration,type:input.type,customerId:bookingId(input.customerId),requestId:bookingId(input.requestId),timezone:input.timezone};
+  const data={date:input.date,startMinute:input.startMinute,duration:input.duration,type:input.type,customerId:input.customerId?bookingId(input.customerId):null,requestId:bookingId(input.requestId),timezone:input.timezone};
   for(const [key,max] of Object.entries({company:150,role:150,round:100,notes:2000}))data[key]=textField(input,key,max);
+  if(!data.customerId){data.customer=validateCustomer({...input.customer,timezone:input.timezone,stage:input.type==='interview'?'interested':'new',followUpDate:''});}
   if(input.id){bookingId(input.id);data.revision=revision(input.revision);}
   return data;
 }

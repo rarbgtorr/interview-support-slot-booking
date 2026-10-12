@@ -11,6 +11,15 @@
   included_files = ["public/schedule.js"]
 
 [[redirects]]
+  from = "/booking"
+  to = "/booking.html"
+  status = 200
+[[redirects]]
+  from = "/booking/"
+  to = "/booking.html"
+  status = 200
+
+[[redirects]]
   from = "/admin"
   to = "/index.html"
   status = 200

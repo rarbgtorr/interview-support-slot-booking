@@ -3,7 +3,7 @@ const S=Schedule,$=id=>document.getElementById(id);
 const STAGES={new:'New customer',demo_booked:'Demo booked',demo_completed:'Demo completed',interested:'Interested',follow_up:'Follow-up needed',not_interested:'Not interested',interview_booked:'Interview booked',closed:'Closed'};
 const STATUS={booked:'Booked',completed:'Completed',cancelled:'Cancelled',no_show:'No-show'};
 const initial=S.currentServiceDate();
-let customers=[],appointments=[],view='today',selectedDate=initial,calendarMonth=initial.slice(0,7),calendarGroup='morning';
+let customers=[],appointments=[],view='calendar',selectedDate=initial,calendarMonth=initial.slice(0,7),calendarGroup='morning';
 let dataReady=false,busy=false,loadSequence=0,customerEditing=null,customerDirty=false,appointmentEditing=null,appointmentMinute=null,appointmentGroup='morning',requestId=null,pendingAppointment=null;
 const monthSlots=new Map(),slotErrors=new Map(),slotRequests=new Map();
 let slotGeneration=0;
@@ -133,7 +133,7 @@ function renderCalendar(){
     const date=calendarMonth+'-'+String(i).padStart(2,'0'),b=document.createElement('button');b.type='button';b.className='day';b.textContent=i;b.setAttribute('aria-label',S.dateLabel(date));b.setAttribute('aria-pressed',String(date===selectedDate));
     if(date===S.dateKey(new Date()))b.classList.add('today');if(date===selectedDate)b.classList.add('selected');
     if(ready){const rows=daySlots(date);if(S.STARTS.some(m=>S.state(rows,m,30,date)==='available'))b.classList.add('has-available');if(Object.values(rows).some(r=>r.status==='booked'))b.classList.add('has-booked');if(Object.values(rows).some(r=>r.status==='blocked'))b.classList.add('has-blocked');}
-    const dot=document.createElement('i');dot.className='availability';b.append(dot);b.onclick=()=>{selectedDate=date;renderCalendar();};grid.append(b);
+    const dot=document.createElement('i');dot.className='availability';b.append(dot);b.onclick=()=>{selectedDate=date;renderCalendar();if(innerWidth<700)$('calendarSlots').scrollIntoView({behavior:'smooth',block:'start'});};grid.append(b);
   }
   $('calendarDurationLabel').classList.toggle('hidden',$('calendarType').value==='demo');
   periodTabs($('calendarPeriods'),calendarGroup,g=>{calendarGroup=g;renderCalendar();});
@@ -144,7 +144,7 @@ function renderCalendar(){
     const group=S.GROUPS.find(g=>g.id===calendarGroup),duration=calendarDuration();
     for(const m of S.STARTS.filter(m=>m>=group.from&&m<group.to&&m+duration<=S.END)){
       const slots=daySlots(selectedDate),own=slots[m],state=S.state(slots,m,duration,selectedDate),a=appointmentById(own?.appointmentId);
-      const row=document.createElement('div');row.className='slot calendar-slot '+state;
+      const row=document.createElement('div');row.className='slot calendar-slot '+state+(a?' appointment-'+a.booking_type:'');
       row.innerHTML=`<div class="slot-main"><div class="slot-time">${esc(S.localLabel(selectedDate,m,duration,displayZone))}</div><div class="slot-duration">${duration} minutes${a?' · '+esc(customerById(a.customer_id)?.name||'Customer')+' · '+esc(a.booking_type):''}</div></div>`;
       const actions=document.createElement('div');actions.className='slot-actions';const label=document.createElement('span');label.className='slot-status';label.textContent=state==='past'?'Unavailable':state;actions.append(label);
       const add=(text,fn,disabled=false)=>{const b=document.createElement('button');b.type='button';b.className='small-btn';b.textContent=text;b.disabled=busy||disabled;b.onclick=fn;actions.append(b);};
@@ -161,8 +161,8 @@ function openCustomer(id=null){
   if(!dataReady||busy)return;if($('appointmentDialog').open)$('appointmentDialog').close();
   customerEditing=id?customerById(id):null;customerDirty=false;const c=customerEditing;
   $('customerForm').reset();$('customerDialogTitle').textContent=c?c.name:'Add customer';$('customerName').value=c?.name||'';$('customerPhone').value=c?.phone||'';$('customerService').value=c?.service_interest||'';zones($('customerTimezone'),c?.timezone||S.TIMEZONE);$('customerStage').value=c?.stage||'new';$('customerFollowUp').value=c?.follow_up_date||'';$('customerNotes').value=c?.notes||'';$('customerError').textContent='';$('saveCustomerButton').disabled=false;
-  $('customerProfileActions').classList.toggle('hidden',!c);$('customerHistorySection').classList.toggle('hidden',!c);$('profileDemo').disabled=false;$('profileInterview').disabled=!!c&&!['interested','interview_booked'].includes(c.stage);
-  $('profileHint').textContent=c&&!['interested','interview_booked'].includes(c.stage)?'After the demo, choose Interested and save to enable interview booking.':'';
+  $('customerProfileActions').classList.toggle('hidden',!c);$('customerHistorySection').classList.toggle('hidden',!c);$('profileDemo').disabled=false;$('profileInterview').disabled=false;
+  $('profileHint').textContent='';
   if(c)appointmentCards($('customerHistory'),appointments.filter(a=>a.customer_id===c.id),'No appointments yet. Book their first demo.',true);
   if(!$('customerDialog').open)$('customerDialog').showModal();
 }
@@ -176,7 +176,7 @@ $('customerForm').onsubmit=async event=>{
 function openAppointment(type='demo',customerId=null,existing=null,prefill={}){
   if(!dataReady||busy)return;if($('customerDialog').open)$('customerDialog').close();
   appointmentEditing=existing;appointmentMinute=existing?.start_minute??prefill.minute??null;appointmentGroup=appointmentMinute===null?'morning':S.groupFor(appointmentMinute).id;requestId=crypto.randomUUID();
-  $('appointmentForm').reset();options($('appointmentCustomer'),[['','Select customer'],...sortedCustomers(customers).map(c=>[c.id,c.name+' · '+c.phone])]);$('appointmentCustomer').value=customerId||'';$('appointmentCustomer').disabled=!!existing;$('appointmentType').value=type;$('appointmentType').disabled=!!existing;$('appointmentAddCustomer').classList.toggle('hidden',!!existing);
+  $('appointmentForm').reset();options($('appointmentCustomer'),[['','Enter customer details below'],...sortedCustomers(customers).map(c=>[c.id,c.name+' · '+c.phone])]);$('appointmentCustomer').value=customerId||'';$('appointmentCustomer').disabled=!!existing;$('appointmentType').value=type;$('appointmentType').disabled=!!existing;$('directCustomerFields').classList.toggle('hidden',!!customerId);for(const id of ['bookingName','bookingPhone','bookingService'])$(id).disabled=!!customerId;
   const c=customerById(customerId);zones($('appointmentTimezone'),existing?.timezone||c?.timezone||S.TIMEZONE);$('appointmentDate').value=existing?.service_date||prefill.date||selectedDate;$('appointmentDate').min=S.currentServiceDate();$('appointmentDuration').value=String(type==='demo'?60:existing?.duration_minutes||prefill.duration||30);
   $('appointmentCompany').value=existing?.company||'';$('appointmentRole').value=existing?.role||'';$('appointmentRound').value=existing?.round||'';$('appointmentNotes').value=existing?.notes||'';$('appointmentError').textContent='';syncAppointmentType();
   $('appointmentDialog').showModal();loadSlots($('appointmentDate').value.slice(0,7));
@@ -184,12 +184,12 @@ function openAppointment(type='demo',customerId=null,existing=null,prefill={}){
 function syncAppointmentType(){
   const type=$('appointmentType').value;$('appointmentDialogTitle').textContent=(appointmentEditing?'Reschedule ':'Book ')+type;
   $('appointmentDuration').disabled=type==='demo';if(type==='demo')$('appointmentDuration').value='60';$('interviewFields').classList.toggle('hidden',type!=='interview');
-  const c=customerById($('appointmentCustomer').value),eligible=!!c&&(type==='demo'||appointmentEditing||['interested','interview_booked'].includes(c.stage));
-  $('appointmentCustomerHint').textContent=!c?'Select a customer, or add one first.':!eligible?'Mark this customer Interested in their profile before booking an interview.':c.phone+' · '+STAGES[c.stage];renderAppointmentSlots();
+  const c=customerById($('appointmentCustomer').value),eligible=!!c||!$('appointmentCustomer').value;
+  $('appointmentCustomerHint').textContent=!c?'Enter the name and phone number below. The customer record is saved with this appointment.':c.phone+' · '+STAGES[c.stage];renderAppointmentSlots();
 }
 function renderAppointmentSlots(){
   const date=$('appointmentDate').value,month=date.slice(0,7),duration=Number($('appointmentDuration').value),zone=$('appointmentTimezone').value,type=$('appointmentType').value;
-  const c=customerById($('appointmentCustomer').value),eligible=!!c&&(type==='demo'||appointmentEditing||['interested','interview_booked'].includes(c.stage));
+  const c=customerById($('appointmentCustomer').value),eligible=!!c||!$('appointmentCustomer').value;
   const ready=dataReady&&S.validDate(date)&&monthSlots.has(month),slots=daySlots(date),group=S.GROUPS.find(g=>g.id===appointmentGroup);
   periodTabs($('appointmentPeriods'),appointmentGroup,g=>{appointmentGroup=g;renderAppointmentSlots();});$('appointmentSlots').replaceChildren();
   $('appointmentAvailabilityMessage').textContent=slotErrors.get(month)||(!ready?'Loading availability…':appointmentEditing?'Your original reservation stays booked until the replacement is saved.':'Choose a green available slot.');
@@ -203,17 +203,16 @@ function renderAppointmentSlots(){
 }
 $('appointmentForm').onsubmit=async event=>{
   event.preventDefault();if(busy||appointmentMinute===null)return;$('appointmentError').textContent='';$('saveAppointmentButton').disabled=true;
-  const payload={customerId:$('appointmentCustomer').value,type:$('appointmentType').value,duration:Number($('appointmentDuration').value),date:$('appointmentDate').value,startMinute:appointmentMinute,timezone:$('appointmentTimezone').value,company:$('appointmentCompany').value,role:$('appointmentRole').value,round:$('appointmentRound').value,notes:$('appointmentNotes').value,requestId,...(appointmentEditing?{id:appointmentEditing.id,revision:appointmentEditing.revision}:{})};
+  const payload={customerId:$('appointmentCustomer').value||null,customer:{name:$('bookingName').value,phone:$('bookingPhone').value,serviceInterest:$('bookingService').value},type:$('appointmentType').value,duration:Number($('appointmentDuration').value),date:$('appointmentDate').value,startMinute:appointmentMinute,timezone:$('appointmentTimezone').value,company:$('appointmentCompany').value,role:$('appointmentRole').value,round:$('appointmentRound').value,notes:$('appointmentNotes').value,requestId,...(appointmentEditing?{id:appointmentEditing.id,revision:appointmentEditing.revision}:{})};
   try{const result=await mutate('admin-appointments',payload);$('appointmentDialog').close();selectedDate=result.appointment.service_date;calendarMonth=selectedDate.slice(0,7);calendarGroup=S.groupFor(result.appointment.start_minute).id;message((appointmentEditing?'Appointment rescheduled.':'Appointment booked.')+' No notification was sent.');render();}
   catch(error){$('appointmentError').textContent=error.message;monthSlots.delete(payload.date.slice(0,7));await loadSlots(payload.date.slice(0,7));}finally{if($('appointmentDialog').open)renderAppointmentSlots();}
 };
 $('appointmentForm').oninput=()=>{requestId=crypto.randomUUID();};
-$('appointmentCustomer').onchange=()=>{const c=customerById($('appointmentCustomer').value);if(c)zones($('appointmentTimezone'),c.timezone);syncAppointmentType();};
+$('appointmentCustomer').onchange=()=>{const c=customerById($('appointmentCustomer').value);$('directCustomerFields').classList.toggle('hidden',!!c);for(const id of ['bookingName','bookingPhone','bookingService'])$(id).disabled=!!c;if(c)zones($('appointmentTimezone'),c.timezone);syncAppointmentType();};
 $('appointmentType').onchange=()=>{appointmentMinute=null;syncAppointmentType();};$('appointmentDuration').onchange=()=>{renderAppointmentSlots();};$('appointmentTimezone').onchange=()=>renderAppointmentSlots();
 $('appointmentDate').onchange=()=>{appointmentMinute=null;renderAppointmentSlots();if(S.validDate($('appointmentDate').value))loadSlots($('appointmentDate').value.slice(0,7));};
-$('appointmentAddCustomer').onclick=()=>{pendingAppointment={type:$('appointmentType').value,prefill:{date:$('appointmentDate').value,minute:appointmentMinute,duration:Number($('appointmentDuration').value)}};$('appointmentDialog').close();openCustomer();};
 $('profileDemo').onclick=()=>openAppointment('demo',customerEditing.id);$('profileInterview').onclick=()=>openAppointment('interview',customerEditing.id);
-$('newCustomerButton').onclick=()=>{pendingAppointment=null;openCustomer();};$('quickDemoButton').onclick=()=>openAppointment('demo');$('quickInterviewButton').onclick=()=>openAppointment('interview');
+$('newCustomerButton').onclick=()=>switchView('customers');$('quickDemoButton').onclick=()=>openAppointment('demo');$('quickInterviewButton').onclick=()=>openAppointment('interview');
 $('customerSearch').oninput=renderCustomers;$('stageFilter').onchange=renderCustomers;
 $('displayTimezone').onchange=()=>{displayZone=$('displayTimezone').value;localStorage.setItem('supportDisplayTimezone',displayZone);render();if($('customerDialog').open&&customerEditing)appointmentCards($('customerHistory'),appointments.filter(a=>a.customer_id===customerEditing.id),'No appointments yet.',true);};
 $('calendarType').onchange=renderCalendar;$('calendarDuration').onchange=renderCalendar;

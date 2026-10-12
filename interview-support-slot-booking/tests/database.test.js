@@ -77,3 +77,15 @@ test('cancelling an interview restores interest even with a demo booked; cancell
   await reserve({...payload('2030-04-01',720,30,'interview'),customerId:c.id});
   await status(demo,'cancelled');assert.equal((await database.query('select stage from public.support_customers where id=$1',[c.id])).rows[0].stage,'interview_booked');
 });
+
+async function direct(data){return (await database.query('select public.support_book_direct($1::jsonb,null) as appointment',[JSON.stringify(data)])).rows[0].appointment;}
+test('direct booking saves a new customer and appointment atomically, retries reuse both',async()=>{
+ const data={...payload('2030-05-01'),customerId:null,customer:profile({name:'Direct Customer',phone:'+919876543214'})};
+ const row=await direct(data);assert.deepEqual(await slots(row.id),[600,630]);assert.equal((await direct(data)).id,row.id);
+ assert.equal((await database.query("select count(*)::int as n from public.support_customers where phone_key='919876543214'")).rows[0].n,1);
+ const interview=await direct({...data,requestId:crypto.randomUUID(),date:'2030-05-02',type:'interview',duration:30});assert.equal(interview.customer_id,row.customer_id);
+});
+test('conflicting direct booking rolls back newly entered customer details too',async()=>{
+ await reserve(payload('2030-05-03'));const data={...payload('2030-05-03'),customerId:null,customer:profile({phone:'+919876543215'})};
+ await assert.rejects(direct(data),{code:'23505'});assert.equal((await database.query("select count(*)::int as n from public.support_customers where phone_key='919876543215'")).rows[0].n,0);
+});

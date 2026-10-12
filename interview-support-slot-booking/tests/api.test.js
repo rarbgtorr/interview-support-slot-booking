@@ -16,7 +16,7 @@ test('admin login and token require correct password, signature, audience and ex
 });
 test('appointment uses a single atomic RPC, and never sends email',async t=>{
   const calls=[];t.mock.method(global,'fetch',async(url,options)=>{calls.push({url:String(url),body:JSON.parse(options.body),headers:options.headers});return json({id:id()});});
-  const payload=input(),r=await require('../netlify/functions/admin-appointments').handler(event('POST',{...payload,forgedLabel:'fake'}));assert.equal(r.statusCode,200);assert.equal(calls.length,1);assert.match(calls[0].url,/rpc\/support_reserve/);assert.equal(calls[0].body.p_data.duration,60);assert.ok(!('forgedLabel' in calls[0].body.p_data));assert.equal(calls[0].headers.apikey,'sb_secret_test');assert.equal(calls[0].headers.Authorization,undefined);assert.ok(!r.body.includes('notifications'));
+  const payload=input(),r=await require('../netlify/functions/admin-appointments').handler(event('POST',{...payload,forgedLabel:'fake'}));assert.equal(r.statusCode,200);assert.equal(calls.length,1);assert.match(calls[0].url,/rpc\/support_book_direct/);assert.equal(calls[0].body.p_data.duration,60);assert.ok(!('forgedLabel' in calls[0].body.p_data));assert.equal(calls[0].headers.apikey,'sb_secret_test');assert.equal(calls[0].headers.Authorization,undefined);assert.ok(!r.body.includes('notifications'));
 });
 test('wrong demo duration, closing overrun, unsupported zone and malformed IDs are rejected before RPC',async t=>{
   let calls=0;t.mock.method(global,'fetch',async()=>{calls++;return json({});});const h=require('../netlify/functions/admin-appointments').handler;
@@ -43,4 +43,13 @@ test('month availability paging retrieves all 1240 possible half-hours',async t=
 test('member, public booking and email functions are removed',()=>{
   for(const name of ['book','slots','member-config','member-bookings','member-cancel','member-reschedule','reminders','visitor-track'])assert.equal(fs.existsSync(__dirname+'/../netlify/functions/'+name+'.js'),false);
   assert.equal(fs.existsSync(__dirname+'/../public/member.html'),false);assert.equal(H.notify,undefined);assert.equal(H.member,undefined);
+});
+test('direct appointment accepts inline customer details without a prior customer ID',async t=>{
+ let payload;t.mock.method(global,'fetch',async(url,options)=>{payload=JSON.parse(options.body);return json({id:id()});});
+ const data={...input(),customerId:null,customer:{name:'Inline customer',phone:'+919876543210',serviceInterest:'GCP'}};
+ assert.equal((await require('../netlify/functions/admin-appointments').handler(event('POST',data))).statusCode,200);assert.equal(payload.p_data.customer.name,'Inline customer');assert.equal(payload.p_data.customerId,null);
+});
+test('public calendar works without login and limits details to the requested month',async t=>{
+ let url;t.mock.method(global,'fetch',async(u)=>{url=new URL(u);return json([{id:id(),booking_type:'demo',customer:{name:'Customer',phone:'+919876543210'}}]);});
+ const h=require('../netlify/functions/booking-calendar').handler;const r=await h(event('GET',{},null));assert.equal(r.statusCode,200);assert.match(r.body,/9876543210/);assert.equal(url.searchParams.get('service_date'),'gte.2030-01-01');assert.equal(url.searchParams.get('status'),'neq.cancelled');assert.match(url.searchParams.get('select'),/customer:support_customers/);assert.equal((await h(event('POST',{},null))).statusCode,405);
 });

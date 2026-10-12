@@ -4,22 +4,24 @@ An admin-only customer manager using the reference slot-booking visual style: na
 
 ## Daily workflow
 
-1. Add a customer with name, phone/WhatsApp number (including country code), service interest, timezone, notes, and an optional follow-up date.
-2. Book a **60-minute demo** from their profile or the shared calendar.
-3. After it ends, mark the demo completed. Record the decision in the profile: Interested, Follow-up needed, or Not interested.
-4. Mark the customer **Interested** and save to enable a separate **30- or 60-minute interview**. Add company, role, round, and appointment notes.
-5. Reschedule, cancel, record completion/no-show, and manage follow-ups from the dashboard.
+1. Sign in at `/` with the administrator password. The mobile-first calendar is the default view.
+2. Select an operating date, a demo/interview type, and an available slot.
+3. Enter name, phone/WhatsApp number, service interest, and optional interview details in the appointment form. No prior customer creation is needed.
+4. Save once. The server creates or reuses the customer by normalized phone number and reserves the appointment in one transaction. If unavailable, the whole transaction rolls back.
+5. Open profiles/history from Customers or a booked slot. Manage status, notes, follow-ups, cancellation, and rescheduling there.
 
-Each appointment is linked to the same customer record. Search by name or phone; formatting is ignored for phone search and duplicate-number detection. Use the same country-code format consistently.
+You can optionally select an existing customer in the appointment form. Interview booking itself marks the customer interested as needed; there is no separate stage-setting prerequisite. Matching phone numbers reuse the existing profile without overwriting its contact details.
+
+`/booking` is a **password-free, read-only calendar**, with different colours for demos and interviews. Selecting an appointment shows the full customer contact details, service information, appointment details, and notes, as explicitly requested by the owner. Anyone with the URL can read these details. Creation and all changes remain administrator-only at `/` and `/admin`.
 
 ## Views
 
 - **Today:** demos and interviews for the current operating day, quick appointment actions, and due follow-ups.
 - **Customers:** searchable profiles, customer stage filters, notes, and appointment history.
-- **Calendar:** month view, grouped slots, appointment creation, block/unblock individual half-hours or a day, and history for the selected operating date.
+- **Calendar:** mobile-first month view, grouped slots, direct appointment creation, block/unblock individual half-hours or a day, and history for the selected operating date.
 - **Follow-ups:** due/overdue, upcoming, interested customers awaiting interviews, and follow-up customers without a date. Clear the follow-up date and save after completing it.
 
-Both `/` and `/admin` open the same password-protected application. There is no `/member` route or public booking API.
+Both `/` and `/admin` open the password-protected management application. `/booking` is public read-only. There is no `/member` route or public mutation API.
 
 ## Booking rules
 
@@ -41,6 +43,10 @@ The shared schedule runs **7 AM IST to 3 AM IST the following day**, in 40 half-
 - Completion is available after the end time; no-show is available after the start time. Cancellation releases all reserved halves while retaining history.
 - Booked times are preserved when blocking a whole day. Unblocking removes only blocks.
 
+## Database update for existing installations
+
+The `direct_admin_slot_booking` migration has been applied to the connected interview-support project. Other installations can run `direct-booking-update.sql` in SQL Editor. Fresh installations should run the full `supabase-schema.sql` instead.
+
 ## Database setup
 
 Use the Supabase project for this **new app**, not the reference app's project.
@@ -48,13 +54,13 @@ Use the Supabase project for this **new app**, not the reference app's project.
 1. Run the entire `supabase-schema.sql` in Supabase **SQL Editor**.
 2. Confirm `support_customers`, `support_appointments`, `support_slot_reservations`, and `support_booking_requests` exist.
 3. Copy the project URL and a server `sb_secret_...` key from the Supabase dashboard. A legacy `service_role` key is supported as an alternative.
-4. Keep Row Level Security enabled. The script grants table/RPC access only to `service_role`; browser roles cannot read customer records.
+4. Keep Row Level Security enabled. The script grants table/RPC access only to `service_role`; direct browser database roles cannot read customer records; the public calendar reads through the server.
 
 **Updating from the earlier version:** this script creates separate `support_*` tables. Existing `interview_*` records are left intact but are not imported or shown automatically. No destructive cleanup is performed. If the earlier app contains real bookings, reconcile/import them before using the new shared schedule, because the old and new ledgers are separate.
 
 ## Netlify setup
 
-This GitHub repository currently contains the app in the `interview-support-slot-booking` subfolder. The repository-root `netlify.toml` selects `interview-support-slot-booking` as the base directory. For an existing project, confirm the Netlify **base directory** is `interview-support-slot-booking` and redeploy through the Git build pipeline; uploading the entire repository as static files will not deploy the APIs. The configuration supplies:
+This GitHub repository currently contains the app in the `interview-support-slot-booking` subfolder. The root `netlify.toml` selects `interview-support-slot-booking` as the base directory. Deploy through the Git build pipeline; uploading the entire repository as static files will not deploy the APIs. The configuration supplies:
 
 - Build command: `npm run build`
 - Publish directory: `public`
