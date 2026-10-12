@@ -28,7 +28,7 @@ function wrap(method,handler,adminRequired=false){return async event=>{
   try{if(event.httpMethod!==method)return response(405,{error:'Method not allowed.'});if(adminRequired)admin(event);return await handler(event);}
   catch(error){if(error instanceof HttpError)return response(error.status,{error:error.message});
     const code=error.code;
-    if(code==='23505')return response(409,{error:error.message.includes('phone_key')?'A customer with this phone number already exists. Search for their profile.':'That time is no longer available. Please choose another slot.'});
+    if(code==='23505')return response(409,{error:error.message.includes('phone_key')?'A customer with this phone number already exists. Search for their profile.':'This slot is full or blocked. Choose another slot.'});
     if(code==='40001')return response(409,{error:'This record changed. Refresh it before saving again.'});
     if(code==='22023')return response(400,{error:error.message});
     if(code==='22007'||code==='22P02'||code==='23514'||code==='23502')return response(400,{error:'Check the details and select a valid time.'});
@@ -49,14 +49,12 @@ function validateCustomer(input){
   return data;
 }
 function validateAppointment(input){
-  if(!S.validSelection(input.date,input.startMinute,input.duration))throw new HttpError(400,'Select a future 30- or 60-minute slot between 7 AM and 3 AM the following day.');
-  if(!['demo','interview'].includes(input.type)|| (input.type==='demo'&&input.duration!==60))throw new HttpError(400,'Demos must be 60 minutes. Interviews can be 30 or 60 minutes.');
-  if(!S.validZone(input.timezone))throw new HttpError(400,'Select a valid timezone.');
-  const data={date:input.date,startMinute:input.startMinute,duration:input.duration,type:input.type,customerId:input.customerId?bookingId(input.customerId):null,requestId:bookingId(input.requestId),timezone:input.timezone};
-  for(const [key,max] of Object.entries({company:150,role:150,round:100,notes:2000}))data[key]=textField(input,key,max);
-  if(!data.customerId){data.customer=validateCustomer({...input.customer,timezone:input.timezone,stage:input.type==='interview'?'interested':'new',followUpDate:''});}
-  if(input.id){bookingId(input.id);data.revision=revision(input.revision);}
-  return data;
+ if(!S.validSelection(input.date,input.startMinute,30)||input.duration!==30)throw new HttpError(400,'Choose a future 30-minute slot.');
+ if(!['demo','interview'].includes(input.type)||!S.validZone(input.timezone))throw new HttpError(400,'Choose a booking type and valid member timezone.');
+ const profile=validateCustomer({...input.customer,timezone:input.timezone,stage:input.type==='interview'?'interested':'new',followUpDate:''});
+ const data={date:input.date,startMinute:input.startMinute,duration:30,type:input.type,customerId:input.customerId?bookingId(input.customerId):null,requestId:bookingId(input.requestId),timezone:input.timezone,customer:profile,memberName:profile.name,phone:profile.phone,company:textField(input,'company',150,true),experience:textField(input,'experience',100,true),round:textField(input,'round',100,true)};
+ if(input.id){bookingId(input.id);data.revision=revision(input.revision);}
+ return data;
 }
 function monthRange(month){if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month||''))throw new HttpError(400,'Select a valid month.');const from=month+'-01';if(!S.validDate(from))throw new HttpError(400,'Invalid month.');const [year,m]=month.split('-').map(Number);const next=new Date(Date.UTC(year,m,1)).toISOString().slice(0,10);return {from,next};}
 async function allRows(table,select='*'){

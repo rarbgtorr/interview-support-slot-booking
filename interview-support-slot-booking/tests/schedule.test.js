@@ -15,15 +15,13 @@ test('previous service date remains selectable before 3 AM IST',()=>{
   assert.equal(S.currentServiceDate(new Date('2031-01-01T01:00:00+05:30')),'2030-12-31');
   assert.equal(S.currentServiceDate(new Date('2031-01-01T03:00:00+05:30')),'2031-01-01');
 });
-test('60-minute booking crosses groups and midnight, but cannot overrun closing',()=>{
-  for(const minute of [690,990,1230,1410,1560])assert.equal(S.validSelection('2030-01-01',minute,60,0),true);
-  assert.equal(S.validSelection('2030-01-01',1590,60,0),false);
-  assert.equal(S.validSelection('2030-01-01',1590,30,0),true);
+test('each new booking is one half-hour, including the final 2:30 AM start',()=>{
+  for(const minute of S.STARTS)assert.equal(S.validSelection('2030-01-01',minute,30,0),true);
+  assert.equal(S.validSelection('2030-01-01',600,60,0),false);
 });
-test('either unavailable half disables a 60-minute booking',()=>{
-  assert.equal(S.state({630:'booked'},600,60,'2030-01-01',0),'booked');
-  assert.equal(S.state({630:'blocked'},600,60,'2030-01-01',0),'blocked');
-  assert.equal(S.state({630:'booked'},600,30,'2030-01-01',0),'available');
+test('10 AM labels show exactly 10–10:30 without including the earlier box',()=>{
+  assert.match(S.localLabel('2030-01-01',600,30),/10:00 am.*10:30 am/i);
+  assert.match(S.localLabel('2030-01-01',570,30),/9:30 am.*10:00 am/i);
 });
 test('no past slots, malformed dates, unsupported durations or off-grid starts',()=>{
   assert.equal(S.validSelection('2030-02-30',420,30,0),false);

@@ -54,19 +54,8 @@
     return `${short(a)} · ${clock(a,zone)} – ${short(b)} · ${clock(b,zone)}`;
   }
   function validSelection(date, minute, duration, now=Date.now()) {
-    return validDate(date) && STARTS.includes(minute) && [30,60].includes(duration) && minute+duration<=END && instant(date,minute).getTime()>Number(now);
-  }
-  function state(day,minute,duration,date,now=Date.now(),ignoreBookingId=null) {
-    if(!validSelection(date,minute,duration,now))return 'past';
-    for(let m=minute;m<minute+duration;m+=STEP) {
-      const row=day?.[m];
-      if(!row)continue;
-      const status=typeof row==='string'?row:row.status;
-      if(ignoreBookingId && (row.appointmentId===ignoreBookingId || row.booking?.id===ignoreBookingId))continue;
-      if(status==='booked'||status==='blocked')return status;
-    }
-    return 'available';
+    return validDate(date) && STARTS.includes(minute) && duration===30 && minute+duration<=END && instant(date,minute).getTime()>Number(now);
   }
   function groupFor(minute) { return GROUPS.find(g=>minute>=g.from&&minute<g.to); }
-  return {TIMEZONE,START,END,STEP,GROUPS,STARTS,validDate,validZone,normalizeZone,dateKey,addDays,currentServiceDate,instant,clock,dateLabel,localLabel,validSelection,state,groupFor};
+  return {TIMEZONE,START,END,STEP,GROUPS,STARTS,validDate,validZone,normalizeZone,dateKey,addDays,currentServiceDate,instant,clock,dateLabel,localLabel,validSelection,groupFor};
 });

@@ -1,91 +1,19 @@
-const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const {PGlite}=require('@electric-sql/pglite');let database,customer;
-const profile=(extras={})=>({name:'Test Customer',phone:'+919876543210',serviceInterest:'GCP',timezone:'Asia/Kolkata',stage:'new',notes:'Demo feedback',followUpDate:'2030-02-01',...extras});
-const payload=(date,minute=600,duration=60,type='demo')=>({date,startMinute:minute,duration,type,customerId:customer.id,requestId:crypto.randomUUID(),timezone:'Asia/Kolkata',company:'Example',role:'Engineer',round:'L2',notes:''});
-async function save(data,id=null){return (await database.query('select public.support_save_customer($1::jsonb,$2::uuid) as customer',[JSON.stringify(data),id])).rows[0].customer;}
-async function reserve(data,id=null){return (await database.query('select public.support_reserve($1::jsonb,$2::uuid) as appointment',[JSON.stringify(data),id])).rows[0].appointment;}
-async function status(row,value){return (await database.query('select public.support_set_appointment_status($1,$2,$3) as appointment',[row.id,value,row.revision])).rows[0].appointment;}
-async function slots(id){return (await database.query('select start_minute from public.support_slot_reservations where appointment_id=$1 order by start_minute',[id])).rows.map(r=>r.start_minute);}
-test.before(async()=>{database=new PGlite();await database.exec('create role anon; create role authenticated; create role service_role bypassrls;');await database.exec(fs.readFileSync(path.join(__dirname,'../supabase-schema.sql'),'utf8'));customer=await save(profile());});
-test.after(async()=>{if(database)await database.close();});
-test('customer PII, appointment data and RPCs are inaccessible to browser roles',async()=>{
-  for(const table of ['support_customers','support_appointments','support_slot_reservations','support_booking_requests']){
-    const r=(await database.query("select has_table_privilege('anon',$1,'select') as anonymous,has_table_privilege('authenticated',$1,'select') as member,relrowsecurity as rls from pg_class where oid=$1::regclass",['public.'+table])).rows[0];assert.equal(r.anonymous,false);assert.equal(r.member,false);assert.equal(r.rls,true);
-  }
-  const r=(await database.query("select has_function_privilege('anon','public.support_reserve(jsonb,uuid)','execute') as anonymous,has_function_privilege('service_role','public.support_reserve(jsonb,uuid)','execute') as server")).rows[0];assert.equal(r.anonymous,false);assert.equal(r.server,true);
-  await database.exec('set role service_role');assert.equal((await database.query('select count(*) from public.support_customers')).rows.length,1);await database.exec('reset role');
-});
-test('duplicate formatted phones are rejected; customer edits preserve identity and history',async()=>{
-  await assert.rejects(save(profile({phone:'+91 98765 43210'})),{code:'23505'});
-  const edited=await save(profile({name:'Updated Customer',stage:'interested',revision:0}),customer.id);assert.equal(edited.id,customer.id);assert.equal(edited.revision,1);assert.equal(edited.follow_up_date,'2030-02-01');
-  await assert.rejects(save(profile({revision:0}),customer.id),{code:'40001'});customer=edited;
-});
-test('demo is exactly one hour; interviews accept 30 or 60 minutes only after interest',async()=>{
-  await assert.rejects(reserve(payload('2030-03-01',600,30)),{code:'22023'});
-  const uninterested=await save(profile({phone:'+919876543211'}));await assert.rejects(reserve({...payload('2030-03-01',600,30,'interview'),customerId:uninterested.id}),{code:'22023'});
-  const demo=await reserve(payload('2030-03-01'));assert.equal(demo.booking_type,'demo');assert.deepEqual(await slots(demo.id),[600,630]);
-  const interview=await reserve(payload('2030-03-01',660,30,'interview'));assert.equal(interview.duration_minutes,30);assert.equal(interview.customer_id,demo.customer_id);
-});
-test('demo and interview share capacity; either half blocks an entire one-hour booking',async()=>{
-  await reserve(payload('2030-03-02'));await assert.rejects(reserve(payload('2030-03-02',630,30,'interview')),{code:'23505'});
-  await database.query("select public.support_block('2030-03-03',630,'blocked')");await assert.rejects(reserve(payload('2030-03-03')),{code:'23505'});
-  assert.equal((await database.query("select count(*)::int as count from public.support_appointments where service_date='2030-03-03'")).rows[0].count,0);
-});
-test('failed reschedule preserves original slots; successful move atomically replaces them',async()=>{
-  const original=await reserve(payload('2030-03-04'));await reserve(payload('2030-03-04',720,30,'interview'));
-  await assert.rejects(reserve({...payload('2030-03-04',690),revision:original.revision},original.id),{code:'23505'});assert.deepEqual(await slots(original.id),[600,630]);
-  const moved=await reserve({...payload('2030-03-04',630),revision:original.revision},original.id);assert.equal(moved.id,original.id);assert.equal(moved.revision,1);assert.deepEqual(await slots(original.id),[630,660]);
-  await assert.rejects(reserve({...payload('2030-03-04',810),revision:0},original.id),{code:'40001'});
-});
-test('cancel releases the whole reservation, retains history and rejects stale changes',async()=>{
-  const original=await reserve(payload('2030-03-05'));await assert.rejects(status({...original,revision:99},'cancelled'),{code:'40001'});
-  const cancelled=await status(original,'cancelled');assert.equal(cancelled.status,'cancelled');assert.deepEqual(await slots(original.id),[]);await reserve(payload('2030-03-05'));
-});
-test('completion and no-show require elapsed time; completion records demo outcome',async()=>{
-  const c=await save(profile({phone:'+919876543212'})),a=await reserve({...payload('2030-03-06'),customerId:c.id});
-  await assert.rejects(status(a,'completed'),{code:'22023'});await assert.rejects(status(a,'no_show'),{code:'22023'});
-  await database.query("update public.support_appointments set starts_at=now()-interval '2 hours',ends_at=now()-interval '1 hour' where id=$1",[a.id]);
-  const completed=await status(a,'completed');assert.equal(completed.status,'completed');assert.deepEqual(await slots(a.id),[]);
-  assert.equal((await database.query('select stage from public.support_customers where id=$1',[c.id])).rows[0].stage,'demo_completed');
-});
-test('whole-day blocking covers 40 halves while preserving reserved demos',async()=>{
-  const a=await reserve(payload('2030-03-07'));assert.equal((await database.query("select public.support_block('2030-03-07',null,'blocked') as changed")).rows[0].changed,38);
-  await assert.rejects(database.query("select public.support_block('2030-03-07',600,'blocked')"),{code:'23505'});
-  await database.query("select public.support_block('2030-03-07',null,'available')");assert.deepEqual(await slots(a.id),[600,630]);
-  assert.equal((await database.query("select count(*)::int as count from public.support_slot_reservations where service_date='2030-03-07'")).rows[0].count,2);
-});
-test('request retries remain idempotent after rescheduling; changed retry data is rejected',async()=>{
-  const p=payload('2030-03-08'),a=await reserve(p);assert.equal((await reserve(p)).id,a.id);
-  const moved=await reserve({...payload('2030-03-08',720),revision:a.revision},a.id);assert.equal((await reserve(p)).id,moved.id);assert.equal((await reserve(p)).start_minute,720);
-  await assert.rejects(reserve({...p,startMinute:810}),{code:'22023'});
-  assert.equal((await database.query("select count(*)::int as count from public.support_appointments where service_date='2030-03-08'")).rows[0].count,1);
-});
-test('competing requests have one winner and no partial appointment rows',async()=>{
-  const results=await Promise.allSettled([reserve(payload('2030-03-09')),reserve(payload('2030-03-09')),reserve(payload('2030-03-09',630,30,'interview'))]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
-});
-test('latest valid starts end at 3 AM and SQL rejects overruns and past times',async()=>{
-  const demo=await reserve(payload('2030-12-31',1560));assert.equal(new Date(demo.ends_at).toISOString(),'2030-12-31T21:30:00.000Z');
-  const interview=await reserve(payload('2030-12-30',1590,30,'interview'));assert.equal(interview.start_minute,1590);
-  await assert.rejects(reserve(payload('2030-12-31',1590)),{code:'22023'});await assert.rejects(reserve(payload('2020-01-01')),{code:'22023'});
-});
-
-test('cancelling an interview restores interest even with a demo booked; cancelling demo preserves interview stage',async()=>{
-  const c=await save(profile({phone:'+919876543213',stage:'interested'}));
-  const demo=await reserve({...payload('2030-04-01'),customerId:c.id});
-  const interview=await reserve({...payload('2030-04-01',720,30,'interview'),customerId:c.id});
-  await status(interview,'cancelled');assert.equal((await database.query('select stage from public.support_customers where id=$1',[c.id])).rows[0].stage,'interested');
-  await reserve({...payload('2030-04-01',720,30,'interview'),customerId:c.id});
-  await status(demo,'cancelled');assert.equal((await database.query('select stage from public.support_customers where id=$1',[c.id])).rows[0].stage,'interview_booked');
-});
-
-async function direct(data){return (await database.query('select public.support_book_direct($1::jsonb,null) as appointment',[JSON.stringify(data)])).rows[0].appointment;}
-test('direct booking saves a new customer and appointment atomically, retries reuse both',async()=>{
- const data={...payload('2030-05-01'),customerId:null,customer:profile({name:'Direct Customer',phone:'+919876543214'})};
- const row=await direct(data);assert.deepEqual(await slots(row.id),[600,630]);assert.equal((await direct(data)).id,row.id);
- assert.equal((await database.query("select count(*)::int as n from public.support_customers where phone_key='919876543214'")).rows[0].n,1);
- const interview=await direct({...data,requestId:crypto.randomUUID(),date:'2030-05-02',type:'interview',duration:30});assert.equal(interview.customer_id,row.customer_id);
-});
-test('conflicting direct booking rolls back newly entered customer details too',async()=>{
- await reserve(payload('2030-05-03'));const data={...payload('2030-05-03'),customerId:null,customer:profile({phone:'+919876543215'})};
- await assert.rejects(direct(data),{code:'23505'});assert.equal((await database.query("select count(*)::int as n from public.support_customers where phone_key='919876543215'")).rows[0].n,0);
-});
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),crypto=require('node:crypto');
+const {PGlite}=require('@electric-sql/pglite');let db;
+const schema=fs.readFileSync(__dirname+'/../supabase-schema.sql','utf8');
+const payload=(date,minute=600,type='demo',phone='+919000000010')=>({date,startMinute:minute,duration:30,type,customerId:null,requestId:crypto.randomUUID(),timezone:'Asia/Kolkata',customer:{name:'Test member',phone,timezone:'Asia/Kolkata',stage:'new'},memberName:'Test member',phone,company:'Example',experience:'5 years',round:'Technical L2'});
+const book=async(data,id=null)=>(await db.query('select public.support_book_direct($1::jsonb,$2::uuid) as row',[JSON.stringify(data),id])).rows[0].row;
+const slotRows=async(date,minute)=>(await db.query('select * from public.support_slot_reservations where service_date=$1 and start_minute=$2 order by seat',[date,minute])).rows;
+test.before(async()=>{db=new PGlite();await db.exec('create role anon;create role authenticated;create role service_role bypassrls;');await db.exec(schema);});test.after(async()=>{await db.close();});
+test('10 AM booking reserves only 10–10:30 and leaves 9:30 and 10:30 free',async()=>{const a=await book(payload('2030-01-01'));assert.equal(a.start_minute,600);assert.equal(a.duration_minutes,30);assert.equal((await slotRows('2030-01-01',570)).length,0);assert.equal((await slotRows('2030-01-01',630)).length,0);assert.equal((await slotRows('2030-01-01',600)).length,1);});
+test('same half-hour accepts a demo and interview; third is rejected atomically',async()=>{const a=await book(payload('2030-01-02'));const b=await book(payload('2030-01-02',600,'interview','+919000000011'));assert.notEqual(a.id,b.id);assert.deepEqual((await slotRows('2030-01-02',600)).map(r=>r.seat),[1,2]);await assert.rejects(book(payload('2030-01-02',600,'demo','+919000000012')),{code:'23505'});assert.equal((await db.query("select count(*)::int as n from public.support_customers where phone_key='919000000012'")).rows[0].n,0);});
+test('request retry reuses same reservation, rather than consuming second place',async()=>{const p=payload('2030-01-03'),a=await book(p);assert.equal((await book(p)).id,a.id);assert.equal((await slotRows(p.date,p.startMinute)).length,1);await assert.rejects(book({...p,company:'Changed'}),{code:'22023'});});
+test('failed move preserves original; successful move releases only that booking',async()=>{const a=await book(payload('2030-01-04')),other=await book(payload('2030-01-04',600,'interview'));await book(payload('2030-01-04',660));await book(payload('2030-01-04',660,'interview'));const move={...payload('2030-01-04',660),customerId:a.customer_id,revision:a.revision};await assert.rejects(book(move,a.id),{code:'23505'});assert.equal((await slotRows('2030-01-04',600)).length,2);const moved=await book({...move,startMinute:690,requestId:crypto.randomUUID()},a.id);assert.equal(moved.id,a.id);assert.deepEqual((await slotRows('2030-01-04',600)).map(r=>r.appointment_id),[other.id]);assert.equal((await slotRows('2030-01-04',690)).length,1);await book(payload('2030-01-04',600));assert.equal((await slotRows('2030-01-04',600)).length,2);});
+test('rescheduling into own full slot is safe; stale changes are rejected',async()=>{const a=await book(payload('2030-01-05'));await book(payload('2030-01-05'));const p={...payload('2030-01-05'),customerId:a.customer_id,revision:a.revision};const moved=await book(p,a.id);assert.equal(moved.revision,1);assert.equal((await slotRows('2030-01-05',600)).length,2);await assert.rejects(book({...p,requestId:crypto.randomUUID(),startMinute:630},a.id),{code:'40001'});});
+test('cancellation releases one place and preserves the other booking',async()=>{const a=await book(payload('2030-01-06')),b=await book(payload('2030-01-06',600,'interview'));await db.query("select public.support_set_appointment_status($1,'cancelled',$2)",[a.id,a.revision]);assert.deepEqual((await slotRows('2030-01-06',600)).map(r=>r.appointment_id),[b.id]);await book(payload('2030-01-06'));assert.equal((await slotRows('2030-01-06',600)).length,2);});
+test('both booking types require all six fields and 30-minute duration',async()=>{for(const type of ['demo','interview']){await assert.rejects(book({...payload('2030-01-07',600,type),duration:60}),{code:'22023'});await assert.rejects(book({...payload('2030-01-07',600,type),experience:''}),{code:'22023'});await assert.rejects(book({...payload('2030-01-07',600,type),company:''}),{code:'22023'});}const row=await book(payload('2030-01-07'));assert.equal(row.experience,'5 years');assert.equal(row.member_name,'Test member');assert.equal(row.whatsapp,'+919000000010');});
+test('last half-hour ends at 3 AM next day and past starts fail',async()=>{const a=await book(payload('2030-12-31',1590));assert.equal(new Date(a.ends_at).toISOString(),'2030-12-31T21:30:00.000Z');await assert.rejects(book(payload('2020-01-01')),{code:'22023'});});
+test('booking snapshots preserve each member name and company despite reused phone',async()=>{const a=await book(payload('2030-01-08'));const b=await book({...payload('2030-01-08',630),memberName:'Updated snapshot',company:'Different company'});assert.equal(a.customer_id,b.customer_id);assert.equal(a.member_name,'Test member');assert.equal(b.member_name,'Updated snapshot');assert.equal(a.company,'Example');assert.equal(b.company,'Different company');});
+test('competing requests allow exactly two winners',async()=>{const result=await Promise.allSettled([book(payload('2030-01-09')),book(payload('2030-01-09')),book(payload('2030-01-09'))]);assert.equal(result.filter(r=>r.status==='fulfilled').length,2);assert.equal((await slotRows('2030-01-09',600)).length,2);});
+test('browser roles cannot read PII or invoke booking; RLS stays enabled',async()=>{const r=(await db.query("select has_table_privilege('anon','public.support_appointments','select') as public_read,has_function_privilege('anon','public.support_book_direct(jsonb,uuid)','execute') as public_write,has_function_privilege('service_role','public.support_book_direct(jsonb,uuid)','execute') as server_write,relrowsecurity as rls from pg_class where oid='public.support_appointments'::regclass")).rows[0];assert.equal(r.public_read,false);assert.equal(r.public_write,false);assert.equal(r.server_write,true);assert.equal(r.rls,true);});
+test('capacity migration preserves existing one-hour demos and their two halves',async()=>{const legacy=new PGlite();try{await legacy.exec('create role anon;create role authenticated;create role service_role bypassrls;');const old=schema.slice(0,schema.indexOf('-- Preserve existing reservations'));await legacy.exec(old+'commit;');const p={...payload('2030-02-01'),duration:60};const c=(await legacy.query('select public.support_save_customer($1::jsonb,null) as row',[JSON.stringify(p.customer)])).rows[0].row;p.customerId=c.id;const a=(await legacy.query('select public.support_reserve($1::jsonb,null) as row',[JSON.stringify(p)])).rows[0].row;await legacy.exec(fs.readFileSync(__dirname+'/../simple-booking-update.sql','utf8'));const check=(await legacy.query('select duration_minutes,member_name from public.support_appointments where id=$1',[a.id])).rows[0];assert.equal(check.duration_minutes,60);assert.equal(check.member_name,'Test member');assert.equal((await legacy.query('select count(*)::int as n from public.support_slot_reservations where appointment_id=$1',[a.id])).rows[0].n,2);}finally{await legacy.close();}});

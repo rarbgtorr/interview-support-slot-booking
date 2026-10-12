@@ -11,7 +11,7 @@ http.createServer(async(req,res)=>{
     let body='';for await(const chunk of req){body+=chunk;if(body.length>12000){res.writeHead(413);res.end();return;}}
     try{const result=await require(path.join(root,'netlify/functions',name+'.js')).handler({httpMethod:req.method,headers:req.headers,body,queryStringParameters:Object.fromEntries(url.searchParams)});res.writeHead(result.statusCode,result.headers);res.end(result.body);}catch{res.writeHead(500,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Unable to complete request.'}));}return;
   }
-  const routes={'/booking':'booking.html','/booking/':'booking.html','/':'index.html','/admin':'index.html','/admin/':'index.html'};
+  const routes={'/':'index.html'};
   const file=path.resolve(publicRoot,routes[url.pathname]||'.'+url.pathname);
   if(!file.startsWith(publicRoot+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end('Not found');return;}
   res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream'});fs.createReadStream(file).pipe(res);
