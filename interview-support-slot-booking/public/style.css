@@ -160,3 +160,27 @@ textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba
 .optional{font-weight:400;color:var(--muted);font-size:11px}
 .selected-time,dd{white-space:pre-wrap}
 input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+/* Selection and administration controls use the existing light/dark palette. */
+.slot-box.chosen{outline:3px solid var(--accent);outline-offset:2px;background:var(--demo-bg);border-color:var(--demo-border)}
+.slot-box.unavailable{background:var(--surface-soft);border-color:var(--line);color:var(--muted)}
+.slot-box.unavailable .slot-count{color:var(--muted)}
+.blocked-dot{background:var(--muted)}
+.selection-bar{position:sticky;bottom:10px;z-index:3;border-color:var(--accent)}
+.selection-bar h2{font-size:15px}.selection-bar .error:empty{display:none}
+.selected-slot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;font-size:12px;line-height:1.5}
+.selected-slot span{min-width:0;overflow-wrap:anywhere}
+.selected-slot button{flex:none;min-height:40px;min-width:40px}
+.block-action{width:100%;margin:0 0 12px}
+.login{max-width:450px;margin:30px auto}.login form{margin-top:18px}
+#selectedTime{overflow-wrap:anywhere}
+.slot-box.public-booked{background:var(--interview-bg);border-color:var(--interview-border);color:var(--text)}
+.slot-box.public-booked .slot-count{color:var(--interview-text)}
+.slot-box.public-booked:disabled{opacity:1}
+.public-booked-dot{background:var(--interview-border)}
+#selectBlocks[aria-pressed=true]{background:var(--button-bg);color:var(--button-text)}
+#bulkSlots{max-height:160px;overflow-y:auto}
+.bulk-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bulk-actions .primary{grid-column:1/-1}
+#bulkError:empty{display:none}
+#bulkBar{position:fixed;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:min(728px,calc(100% - 28px));max-height:50dvh;overflow-y:auto;margin:0;z-index:10}
+.shell.has-bulk-selection{padding-bottom:360px}
