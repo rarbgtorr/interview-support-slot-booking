@@ -5,4 +5,4 @@ exports.handler=wrap('POST',async event=>{
   if(input.wholeDay!==true&&!S.STARTS.includes(input.startMinute))throw new HttpError(400,'Invalid slot.');
   const changed=await rpc('support_block',{p_date:input.date,p_minute:input.wholeDay===true?null:input.startMinute,p_status:input.status});
   return response(200,{changed});
-});
+},true);

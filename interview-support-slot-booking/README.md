@@ -1,72 +1,53 @@
-# Simple Interview Support Slot Manager
+# Interview Slot Booking — Testing branch
 
-One mobile-first page at `/`, headed **INTERVIEW SLOT BOOKING**, with a simple calendar and 30-minute boxes. The calendar opens immediately without a password. Anyone with the link can view and manage bookings. Separate member, booking, customer, and follow-up pages are removed. No emails are sent.
+The public page at `/` shows availability only. Select one or two different 30-minute boxes, then enter member details once and save. Slots may be adjacent, non-adjacent, or on different operating dates. Every selected box creates its own 30-minute appointment; each box still accepts two independent bookings.
 
-## How to use it
+Public responses contain capacity and slot summaries only. Member names, WhatsApp numbers, company, experience, interview stage, notes, booking identifiers and management actions are not exposed by public APIs. Visitors have no login and cannot cancel or reschedule existing appointments.
 
-1. Select an operating date and Morning, Afternoon, Evening, or Night.
-2. Tap a **30-minute box**. Choose **Demo** or **Interview** and enter:
-   - Member name
-   - WhatsApp number with country code
-   - Company name
-   - Experience
-   - Interview stage (enter Demo where applicable)
-   - Member timezone
-   - Notes (optional, up to 2,000 characters)
-3. Save once. Use **Show slot times in** to convert visible slot times to your chosen timezone. The selected timezone is remembered on your device and becomes the default member timezone for new bookings. Calendar dates, period groups and operating hours remain based on **IST**; timezone selection never shifts the reserved instant.
-4. A booked box shows its type and count: **1/2** is booked with one more place available; **2/2** is full. Demo is purple; interview is orange. A box containing both uses both colours.
-5. Tap a booked box to see either member's details. Use **Book second appointment** while it has one booking.
-6. To reschedule, open the member's booking, choose **Reschedule**, then tap the destination box. Review the prefilled member details and notes, then save. The original place is released only when the new reservation succeeds. Any other booking in the original box remains.
-7. Cancel a booking from its details to release only that member's reservation.
+At `/admin`, sign in with the administrator password to view bookings and details, reschedule or cancel individual appointments, and block/unblock empty future boxes. Existing bookings cannot be overwritten by blocking. Cancelling or moving one booking releases only its place. The administrator session uses a signed, expiring HttpOnly, Secure, SameSite=Strict cookie; all management APIs require it.
 
-Hours: **7 AM IST to 3 AM IST the following day**, with 40 distinct half-hours. Latest start: **2:30 AM**. Groups follow IST. Actual next-day dates are displayed for late-night boxes. Member time is shown separately in the form and booking details.
+The display timezone selector and optional Notes remain available. Operating dates and Morning / Afternoon / Evening / Night groups use IST, with hours 7 AM to 3 AM the following day. Display conversion does not change the reserved instant. Demo and interview colors remain visible in light and dark themes for administrators; the public calendar shows availability without exposing booking types or members.
 
-## Capacity and existing data
+## Testing deployment and database
 
-- Every new demo or interview is exactly **30 minutes**.
-- Each half-hour accepts a maximum of **two** independent bookings. A third is rejected by the database.
-- Request retries do not consume a second place.
-- The previous bookings identified by the owner as test data have been cleared. All new demos and interviews are 30 minutes.
-- Member name, WhatsApp number, company, experience, interview stage, and timezone are stored directly in each appointment. No customer profile, service interest, follow-up, or member-status record is created.
-- Existing blocked slots remain unavailable.
+This commit belongs on **Testing** only. Do not publish it to the production domain or merge it to `main` until reviewed.
 
-## Database
+The Testing branch defaults to `BOOKING_DATASET=testing`, using isolated `testing_support_*` tables and RPCs in the existing Supabase project. It never reads or changes the production `support_*` bookings. The isolated Testing dataset has been initialized in the connected interview project. For a fresh setup, run the SQL migration under `supabase/migrations/*_testing_private_admin_batch_booking.sql` against the app project. It creates the isolated dataset and atomic batch RPC with RLS and server-only grants. No production data is copied, deleted, or modified.
 
-For a fresh app project, run the full `supabase-schema.sql` in Supabase SQL Editor.
-
-For an existing installation, run `simple-booking-update.sql`, then `member-only-booking-update.sql`. Both updates have already been applied to the connected interview-support project. It adds the capacity places and appointment fields, preserves existing reservations, and replaces the reservation RPC. It does not alter the reference app's project.
-
-## Netlify
-
-The repository-root `netlify.toml` selects `interview-support-slot-booking` as the base directory. The app config publishes only `public`, runs `npm run build`, bundles the private server functions, and uses Node.js 22. Deploy the latest `main` through Netlify's Git build pipeline.
-
-Set server variables in Netlify, available to Functions in the Production deploy context:
+Configure these Netlify variables for the **Testing branch / branch deploy** context with Functions scope:
 
 | Variable | Value |
 |---|---|
-| `SUPABASE_URL` | Your app project's HTTPS URL |
-| `SUPABASE_SECRET_KEY` | Server `sb_secret_...` key |
+| `SUPABASE_URL` | Existing interview app project URL |
+| `SUPABASE_SECRET_KEY` | Server secret key (legacy `SUPABASE_SERVICE_ROLE_KEY` also works) |
+| `BOOKING_DATASET` | `testing` (also the default for this branch's code) |
+| `ADMIN_PASSWORD` | Your administrator password, at least 12 characters |
+| `ADMIN_JWT_SECRET` | Random signing secret, at least 32 characters |
 
-Legacy `SUPABASE_SERVICE_ROLE_KEY` is supported instead of the modern secret. Never commit real credentials. Redeploy after variable changes. No email or Supabase browser-auth configuration is needed.
+Secrets stay in Netlify or local `.env`, never in Git or browser files. Enable **Testing** in Netlify branch deploys and use that branch's preview URL. Its `/admin` path is the administrator page. Keep the production branch as `main`. No emails are sent.
 
-## Local development and validation
+If this feature is later promoted to production, apply `batch-booking-update.sql` to the production `support_*` dataset and explicitly set `BOOKING_DATASET=production` for the production deploy. Review that promotion separately; this Testing task does not change main or the current live site.
+
+## Transaction guarantees
+
+The public booking function calls one `support_book_slots` RPC, not two independent HTTP writes. The RPC calls reservation logic inside one database statement and shared transaction lock. A conflict in either box rolls back all new appointments and reservations. Request UUIDs make retries idempotent and reject reused IDs with different details. Public input cannot include an existing appointment ID or revision.
+
+## Local checks
 
 ```bash
 npm ci
 cp .env.example .env
-# Fill server settings in .env.
+# Fill the server-only settings.
 npm run dev
 ```
 
-Open `http://localhost:3000/`.
+Open `/` for public booking or `/admin` for administrator management.
 
 ```bash
 npm test
 npm run build
 ```
 
-The test suite runs actual SQL/RPCs against isolated PGlite and tests capacity, idempotency, exact selected minutes, member fields, cancellation/rescheduling isolation, stale edits, permissions, and preservation of older bookings. `tests/browser-flow.cjs` additionally requires Playwright and Chromium and tests the UI with real handlers and SQL while adapting only the Supabase REST transport. Set `QA_CHROMIUM_EXECUTABLE` for a custom browser; screenshots are optional with `QA_SCREENSHOT_DIR`.
+Tests cover actual SQL and RPC behavior using isolated PGlite, privacy, signed sessions, batch rollback and retries, capacity, notes, timezone conversion and blocking. The optional `tests/browser-flow.cjs` requires Playwright/Chromium and tests real handlers and SQL with only the Supabase HTTP transport adapted. Set `QA_CHROMIUM_EXECUTABLE` if needed; `QA_SCREENSHOT_DIR` enables screenshots.
 
-The booking HTTP functions allow public reads and writes, as requested. Database credentials remain server-only. Database roles `anon` and `authenticated` have no booking-table access; RLS is enabled. Private server functions use explicitly granted service-role access. A shared transaction lock serializes reservation changes, and the date/minute/place primary key enforces two-place capacity. Booking history is retained on cancellation.
-
-Reference UI (unchanged): https://github.com/rarbgtorr/slot-booking-app
+Reference repository is unchanged: https://github.com/rarbgtorr/slot-booking-app
