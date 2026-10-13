@@ -1,10 +1,10 @@
 # Interview Slot Booking — Testing branch
 
-The public page at `/` shows availability only. Select one or two different 30-minute boxes, then enter member details once and save. Slots may be adjacent, non-adjacent, or on different operating dates. Every selected box creates its own 30-minute appointment; each box still accepts two independent bookings.
+The public page at `/` shows **Available** only when both places are free, and **Booked** whenever either place is booked or the administrator blocks the box. Capacity counts appear only in admin. A box with one remaining place is still bookable. Select one or two different 30-minute boxes, then enter member details once and save. Slots may be adjacent, non-adjacent, or on different operating dates. Every selected box creates its own 30-minute appointment; each box still accepts two independent bookings.
 
 Public responses contain capacity and slot summaries only. Member names, WhatsApp numbers, company, experience, interview stage, notes, booking identifiers and management actions are not exposed by public APIs. Visitors have no login and cannot cancel or reschedule existing appointments.
 
-At `/admin`, sign in with the administrator password to view bookings and details, reschedule or cancel individual appointments, and block/unblock empty future boxes. Existing bookings cannot be overwritten by blocking. Cancelling or moving one booking releases only its place. The administrator session uses a signed, expiring HttpOnly, Secure, SameSite=Strict cookie; all management APIs require it.
+At `/admin`, sign in with the administrator password to view bookings and details, reschedule or cancel individual appointments, and block/unblock empty future boxes. Use **Select multiple slots**, tap boxes, then **Block selected** or **Unblock selected** (up to 200 per action, across periods or dates). Bulk operations are atomic and reject conflicts without partially changing availability. Existing bookings cannot be overwritten by blocking. Cancelling or moving one booking releases only its place. The administrator session uses a signed, expiring HttpOnly, Secure, SameSite=Strict cookie; all management APIs require it.
 
 The display timezone selector and optional Notes remain available. Operating dates and Morning / Afternoon / Evening / Night groups use IST, with hours 7 AM to 3 AM the following day. Display conversion does not change the reserved instant. Demo and interview colors remain visible in light and dark themes for administrators; the public calendar shows availability without exposing booking types or members.
 
@@ -12,7 +12,7 @@ The display timezone selector and optional Notes remain available. Operating dat
 
 This commit belongs on **Testing** only. Do not publish it to the production domain or merge it to `main` until reviewed.
 
-The Testing branch defaults to `BOOKING_DATASET=testing`, using isolated `testing_support_*` tables and RPCs in the existing Supabase project. It never reads or changes the production `support_*` bookings. The isolated Testing dataset has been initialized in the connected interview project. For a fresh setup, run the SQL migration under `supabase/migrations/*_testing_private_admin_batch_booking.sql` against the app project. It creates the isolated dataset and atomic batch RPC with RLS and server-only grants. No production data is copied, deleted, or modified.
+The Testing branch defaults to `BOOKING_DATASET=testing`, using isolated `testing_support_*` tables and RPCs in the existing Supabase project. It never reads or changes the production `support_*` bookings. The isolated Testing dataset has been initialized in the connected interview project. For a fresh setup, run all SQL files under `supabase/migrations/` in filename order against the app project. It creates the isolated dataset and atomic batch RPC with RLS and server-only grants. No production data is copied, deleted, or modified.
 
 Configure these Netlify variables for the **Testing branch / branch deploy** context with Functions scope:
 
@@ -26,7 +26,7 @@ Configure these Netlify variables for the **Testing branch / branch deploy** con
 
 Secrets stay in Netlify or local `.env`, never in Git or browser files. Enable **Testing** in Netlify branch deploys and use that branch's preview URL. Its `/admin` path is the administrator page. Keep the production branch as `main`. No emails are sent.
 
-If this feature is later promoted to production, apply `batch-booking-update.sql` to the production `support_*` dataset and explicitly set `BOOKING_DATASET=production` for the production deploy. Review that promotion separately; this Testing task does not change main or the current live site.
+If this feature is later promoted to production, apply `batch-booking-update.sql` and `bulk-blocking-update.sql` to the production `support_*` dataset and explicitly set `BOOKING_DATASET=production` for the production deploy. Review that promotion separately; this Testing task does not change main or the current live site.
 
 ## Transaction guarantees
 

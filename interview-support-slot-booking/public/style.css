@@ -173,3 +173,12 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .block-action{width:100%;margin:0 0 12px}
 .login{max-width:450px;margin:30px auto}.login form{margin-top:18px}
 #selectedTime{overflow-wrap:anywhere}
+.slot-box.public-booked{background:var(--interview-bg);border-color:var(--interview-border);color:var(--text)}
+.slot-box.public-booked .slot-count{color:var(--interview-text)}
+.slot-box.public-booked:disabled{opacity:1}
+.public-booked-dot{background:var(--interview-border)}
+#selectBlocks[aria-pressed=true]{background:var(--button-bg);color:var(--button-text)}
+#bulkSlots{max-height:160px;overflow-y:auto}
+.bulk-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bulk-actions .primary{grid-column:1/-1}
+#bulkError:empty{display:none}
