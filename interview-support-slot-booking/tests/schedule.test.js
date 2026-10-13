@@ -37,3 +37,6 @@ test('selected timezone uses the correct local date and daylight-saving offset',
   assert.match(S.clock(winter,'America/New_York'),/8:30/i);
   assert.match(S.localLabel('2030-01-01',1410,60),/1 Jan 2030.*2 Jan 2030/);
 });
+
+test('periods follow selected timezone with complete, non-overlapping coverage',()=>{for(const zone of ['Asia/Kolkata','America/New_York','Europe/London','Australia/Sydney','Asia/Kathmandu'])for(const d of ['2030-01-01','2030-07-01']){const groups=S.GROUPS.map(g=>S.STARTS.filter(m=>S.groupInZone(d,m,zone).id===g.id));assert.equal(groups.flat().length,40);assert.equal(new Set(groups.flat()).size,40);}});
+test('timezone grouping handles local midnight and daylight saving',()=>{assert.equal(S.groupInZone('2030-01-01',600,'America/New_York').id,'night');assert.equal(S.groupInZone('2030-01-01',630,'America/New_York').id,'night');assert.equal(S.groupInZone('2030-01-01',420,'Australia/Sydney').id,'afternoon');assert.equal(S.groupInZone('2030-07-01',420,'Australia/Sydney').id,'morning');assert.equal(S.groupInZone('2030-01-01',420,'Europe/London').id,'night');assert.equal(S.groupInZone('2030-01-01',690,'Asia/Kolkata').id,'morning');assert.equal(S.groupInZone('2030-01-01',720,'Asia/Kolkata').id,'afternoon');});

@@ -23,7 +23,7 @@
     try { new Intl.DateTimeFormat('en-US',{timeZone:zone}); return true; } catch { return false; }
   }
   function normalizeZone(zone) {
-    return {'Asia/Calcutta':'Asia/Kolkata','Europe/Kiev':'Europe/Kyiv','America/Godthab':'America/Nuuk'}[zone] || zone;
+    return {'Asia/Calcutta':'Asia/Kolkata','Asia/Katmandu':'Asia/Kathmandu','Europe/Kiev':'Europe/Kyiv','America/Godthab':'America/Nuuk'}[zone] || zone;
   }
   function dateKey(value, zone=TIMEZONE) {
     const parts = new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));
@@ -56,6 +56,14 @@
   function validSelection(date, minute, duration, now=Date.now()) {
     return validDate(date) && STARTS.includes(minute) && duration===30 && minute+duration<=END && instant(date,minute).getTime()>Number(now);
   }
+  const zoneHourFormatters = new Map();
+  function groupInZone(date, minute, zone=TIMEZONE) {
+    let formatter=zoneHourFormatters.get(zone);
+    if(!formatter){formatter=new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'numeric',hourCycle:'h23'});zoneHourFormatters.set(zone,formatter);}
+    const hour=Number(formatter.formatToParts(instant(date,minute)).find(p=>p.type==='hour').value)%24;
+    const id=hour>=6&&hour<12?'morning':hour>=12&&hour<17?'afternoon':hour>=17&&hour<21?'evening':'night';
+    return GROUPS.find(g=>g.id===id);
+  }
   function groupFor(minute) { return GROUPS.find(g=>minute>=g.from&&minute<g.to); }
-  return {TIMEZONE,START,END,STEP,GROUPS,STARTS,validDate,validZone,normalizeZone,dateKey,addDays,currentServiceDate,instant,clock,dateLabel,localLabel,validSelection,groupFor};
+  return {TIMEZONE,START,END,STEP,GROUPS,STARTS,validDate,validZone,normalizeZone,dateKey,addDays,currentServiceDate,instant,clock,dateLabel,localLabel,validSelection,groupFor,groupInZone};
 });

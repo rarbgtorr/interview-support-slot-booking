@@ -1,12 +1,12 @@
 # Interview Slot Booking — Testing branch
 
-The public page at `/` shows **Available** only when both places are free, and **Booked** whenever either place is booked or the administrator blocks the box. Capacity counts appear only in admin. A box with one remaining place is still bookable. Select one or two different 30-minute boxes, then enter member details once and save. Slots may be adjacent, non-adjacent, or on different operating dates. Every selected box creates its own 30-minute appointment; each box still accepts two independent bookings.
+The public page at `/` shows **Available** only when both places are free, and **Booked** whenever either place is booked or the administrator blocks the box. Capacity counts appear only in admin. Public users cannot select a box once either place is booked. Only an authenticated admin can fill its second place. This rule is enforced in the database under the same transaction lock as reservations; public retries remain idempotent. Select one or two different 30-minute boxes, then enter member details once and save. Slots may be adjacent, non-adjacent, or on different operating dates. Every selected box creates its own 30-minute appointment; each box still accepts two independent bookings.
 
 Public responses contain capacity and slot summaries only. Member names, WhatsApp numbers, company, experience, interview stage, notes, booking identifiers and management actions are not exposed by public APIs. Visitors have no login and cannot cancel or reschedule existing appointments.
 
-At `/admin`, sign in with the administrator password to view bookings and details, reschedule or cancel individual appointments, and block/unblock empty future boxes. Use **Select multiple slots**, tap boxes, then **Block selected** or **Unblock selected** (up to 200 per action, across periods or dates). Bulk operations are atomic and reject conflicts without partially changing availability. Existing bookings cannot be overwritten by blocking. Cancelling or moving one booking releases only its place. The administrator session uses a signed, expiring HttpOnly, Secure, SameSite=Strict cookie; all management APIs require it.
+At `/admin`, sign in with the administrator password to view bookings and details, reschedule or cancel individual appointments, and block/unblock empty future boxes. Use **Select slots to block**, tap boxes, then **Block selected** or **Unblock selected** (up to 200 per action, across periods or dates). Bulk operations are atomic and reject conflicts without partially changing availability. Existing bookings cannot be overwritten by blocking. Cancelling or moving one booking releases only its place. The administrator session uses a signed, expiring HttpOnly, Secure, SameSite=Strict cookie; all management APIs require it.
 
-The display timezone selector and optional Notes remain available. Operating dates and Morning / Afternoon / Evening / Night groups use IST, with hours 7 AM to 3 AM the following day. Display conversion does not change the reserved instant. Demo and interview colors remain visible in light and dark themes for administrators; the public calendar shows availability without exposing booking types or members.
+The display timezone selector and optional Notes remain available. Operating dates and service hours remain 7 AM to 3 AM the following day in IST. Morning (6 AM–noon), Afternoon (noon–5 PM), Evening (5 PM–9 PM) and Night (9 PM–6 AM) follow the selected display timezone. Every operating slot appears in exactly one group; local date changes are shown on boxes. Display conversion does not change the reserved instant. Demo and interview colors remain visible in light and dark themes for administrators; the public calendar shows availability without exposing booking types or members.
 
 ## Testing deployment and database
 
@@ -26,11 +26,11 @@ Configure these Netlify variables for the **Testing branch / branch deploy** con
 
 Secrets stay in Netlify or local `.env`, never in Git or browser files. Enable **Testing** in Netlify branch deploys and use that branch's preview URL. Its `/admin` path is the administrator page. Keep the production branch as `main`. No emails are sent.
 
-If this feature is later promoted to production, apply `batch-booking-update.sql` and `bulk-blocking-update.sql` to the production `support_*` dataset and explicitly set `BOOKING_DATASET=production` for the production deploy. Review that promotion separately; this Testing task does not change main or the current live site.
+If this feature is later promoted to production, apply `batch-booking-update.sql`, `bulk-blocking-update.sql` and `public-booking-policy-update.sql` to the production `support_*` dataset and explicitly set `BOOKING_DATASET=production` for the production deploy. Review that promotion separately; this Testing task does not change main or the current live site.
 
 ## Transaction guarantees
 
-The public booking function calls one `support_book_slots` RPC, not two independent HTTP writes. The RPC calls reservation logic inside one database statement and shared transaction lock. A conflict in either box rolls back all new appointments and reservations. Request UUIDs make retries idempotent and reject reused IDs with different details. Public input cannot include an existing appointment ID or revision.
+The public booking function calls one `support_book_public_slots` RPC, not two independent HTTP writes. The RPC calls reservation logic inside one database statement and shared transaction lock. A conflict in either box rolls back all new appointments and reservations. Request UUIDs make retries idempotent and reject reused IDs with different details. Public input cannot include an existing appointment ID or revision.
 
 ## Local checks
 
