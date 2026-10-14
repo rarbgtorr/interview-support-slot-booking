@@ -4,7 +4,7 @@ let date=S.currentServiceDate(),month=date.slice(0,7),period='morning',appointme
 function initialDisplayZone(){let zone;try{zone=localStorage.getItem('interviewSlotTimezone');}catch{}return S.validZone(zone)?S.normalizeZone(zone):S.normalizeZone(Intl.DateTimeFormat().resolvedOptions().timeZone||S.TIMEZONE);}
 let displayZone=initialDisplayZone();
 function populateZones(select,value){const list=[...new Set([S.TIMEZONE,'UTC',value,...(Intl.supportedValuesOf?Intl.supportedValuesOf('timeZone'):['America/New_York','Europe/London','Asia/Dubai','Australia/Sydney'])].map(S.normalizeZone))].filter(S.validZone).sort();select.replaceChildren(...list.map(z=>{const o=document.createElement('option');o.value=z;o.textContent=z.replaceAll('_',' ');return o;}));select.value=S.normalizeZone(value);}
-function setupDisplayZone(){populateZones($('timezoneSelect'),displayZone);$('timezoneSelect').onchange=()=>{displayZone=$('timezoneSelect').value;try{localStorage.setItem('interviewSlotTimezone',displayZone);}catch{}renderSlots();renderBulk();};}
+function setupDisplayZone(){populateZones($('timezoneSelect'),displayZone);$('timezoneSelect').onchange=()=>{displayZone=$('timezoneSelect').value;try{localStorage.setItem('interviewSlotTimezone',displayZone);}catch{}renderPeriods();renderSlots();renderBulk();};}
 function note(text='',error=false){$('message').textContent=text;$('message').classList.toggle('error',error);}
 function zones(value=displayZone){populateZones($('memberTimezone'),value);}
 function logoutView(error=''){sequence++;appointments=[];reservations=[];ready=false;moving=null;formTarget=null;openedMinute=null;bulkMode=false;bulkSelection=[];renderBulk();$('rescheduleText').textContent='';$('rescheduleBanner').classList.add('hidden');for(const id of ['slotDialog','bookingDialog'])if($(id).open)$(id).close();$('bookingForm').reset();documents.reset();$('slotBookings').replaceChildren();$('slotGrid').replaceChildren();$('calendarGrid').replaceChildren();$('app').classList.add('hidden');$('logout').classList.add('hidden');$('loginCard').classList.remove('hidden');$('loginError').textContent=error;note();}
@@ -17,12 +17,25 @@ function activeAt(d,m,ignore=null){return appointments.filter(a=>a.id!==ignore&&
 function displayedAt(d,m){const active=activeAt(d,m);const historical=appointments.filter(a=>a.service_date===d&&a.status!=='booked'&&a.status!=='cancelled'&&m>=a.start_minute&&m<a.start_minute+a.duration_minutes);return [...active,...historical];}
 function blocked(d,m){return reservations.some(r=>r.service_date===d&&r.start_minute===m&&r.kind==='blocked');}
 function canBook(d,m){return ready&&!busy&&S.validSelection(d,m,30)&&!blocked(d,m)&&activeAt(d,m,moving?.id).length<2;}
+function renderPeriods(){
+ const counts=Object.fromEntries(S.GROUPS.map(g=>[g.id,{demo:0,interview:0}]));
+ if(ready)for(const a of appointments){
+  if(a.service_date!==date||a.status!=='booked'||!['demo','interview'].includes(a.booking_type))continue;
+  counts[S.groupInZone(a.service_date,a.start_minute,displayZone).id][a.booking_type]++;
+ }
+ $('periods').replaceChildren(...S.GROUPS.map(g=>{
+  const b=document.createElement('button'),id='period-counts-'+g.id;b.type='button';b.role='tab';b.className='admin-period-tab';b.dataset.period=g.id;
+  b.setAttribute('aria-label',g.label);b.setAttribute('aria-describedby',id);b.setAttribute('aria-selected',String(g.id===period));
+  b.innerHTML='<span class="period-label">'+esc(g.label)+'</span><span id="'+id+'" class="period-counts"><span class="period-stat demo-stat">Demo '+(ready?counts[g.id].demo:'—')+'</span> <span class="period-stat interview-stat">Interview '+(ready?counts[g.id].interview:'—')+'</span></span>';
+  b.onclick=()=>{period=g.id;renderSlots();$('periods').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.period===g.id)));};return b;
+ }));
+}
 function render(){
  $('rescheduleBanner').classList.toggle('hidden',!moving);$('rescheduleText').textContent=moving?'Moving '+moving.member_name+'. Choose a new 30-minute box. The original time stays reserved until you save.':'';
  $('monthTitle').textContent=new Intl.DateTimeFormat('en-IN',{timeZone:'UTC',month:'long',year:'numeric'}).format(new Date(month+'-01T12:00:00Z'));$('dateTitle').textContent=S.dateLabel(date);
  const grid=$('calendarGrid');grid.replaceChildren();const first=new Date(month+'-01T12:00:00Z'),total=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+1,0)).getUTCDate();for(let i=0;i<first.getUTCDay();i++)grid.append(document.createElement('span'));
  for(let i=1;i<=total;i++){const key=month+'-'+String(i).padStart(2,'0'),b=document.createElement('button');b.type='button';b.className='day'+(key===date?' selected':'')+(key===S.dateKey(new Date())?' today':'');b.textContent=i;b.setAttribute('aria-label',S.dateLabel(key));b.setAttribute('aria-pressed',String(key===date));const dots=document.createElement('div');dots.className='day-dots';for(const typ of ['demo','interview'])if(ready&&appointments.some(a=>a.service_date===key&&a.booking_type===typ)){const dot=document.createElement('i');dot.className=typ+'-dot';dots.append(dot);}b.append(dots);b.onclick=()=>{date=key;renderSlots();render();};grid.append(b);}
- $('periods').replaceChildren(...S.GROUPS.map(g=>{const b=document.createElement('button');b.type='button';b.role='tab';b.setAttribute('aria-selected',String(g.id===period));b.textContent=g.label;b.onclick=()=>{period=g.id;renderSlots();$('periods').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',String(x.textContent===g.label)));};return b;}));renderSlots();renderBulk();
+ renderPeriods();renderSlots();renderBulk();
 }
 function renderSlots(){const grid=$('slotGrid');grid.replaceChildren();if(!ready){grid.innerHTML='<p class="empty">Loading availability. If loading fails, use Refresh to retry.</p>';return;}const group=S.GROUPS.find(g=>g.id===period);
  for(const m of S.STARTS.filter(m=>S.groupInZone(date,m,displayZone).id===group.id)){const list=displayedAt(date,m),count=activeAt(date,m).length,types=new Set(list.map(a=>a.booking_type)),past=S.instant(date,m)<=new Date(),block=blocked(date,m),b=document.createElement('button');b.type='button';b.className='slot-box'+(types.size===2?' mixed':types.size===1?' '+[...types][0]:'')+(count===2?' full':'')+(block?' blocked':'')+(past?' past':'')+(bulkSelected(date,m)?' chosen':'');b.dataset.minute=m;b.disabled=busy||(!list.length&&past);if(bulkMode)b.setAttribute('aria-pressed',String(bulkSelected(date,m)));b.setAttribute('aria-label',S.localLabel(date,m,30,displayZone)+' · '+displayZone+' · '+count+' of 2 booked');
