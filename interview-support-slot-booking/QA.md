@@ -23,3 +23,10 @@
 - Private `testing-booking-documents` bucket enforces 2 MiB. New metadata/config tables have RLS and no anon/authenticated grants. Security advisor reports only informational no-policy findings, consistent with service-only access.
 - Testing cleanup Edge Function deployed with custom token authentication; unauthenticated POST returns 401. Vault-backed authenticated invocation returns 200. Cron is active every five minutes. Testing scheduler is independent of Netlify branch-deploy scheduling.
 - No extra Netlify variables, paid project or paid branch created. Production tables, main branch and reference repository unchanged.
+
+## Testing: additional files and simpler labels (2026-10-14)
+
+- 61 automated tests pass, including optional additional PDF/DOCX/TXT metadata, three-file limit, shared attachment, cleanup of all files, unsupported format rejection and unauthorized downloads.
+- Chromium flow uploads two additional files, checks admin download controls, retains existing slot/reschedule behavior, and verifies 320/390/1440 px light/dark layouts. Admin identification appears under the title.
+- Labels changed to Documents, Name, Interviewing company name, Overall Experience, Your timezone and Selected time. The requested timezone/group/retention helper text is removed. Resume remains mandatory PDF/DOCX. JD remains file or pasted text.
+- Testing bucket allows text/plain while keeping private access and 2 MiB limits. The private cleanup worker includes additional files. No production dataset or main branch changes.
