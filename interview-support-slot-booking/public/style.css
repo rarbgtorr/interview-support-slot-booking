@@ -182,8 +182,7 @@ dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap;fo
 :root[data-theme=dark] .primary{box-shadow:none}
 :root[data-theme=dark] .member-pill{border:1px solid rgba(255,255,255,.12)}
 .header-actions{display:flex;align-items:center;gap:8px;flex:none}
-.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
-.theme-toggle svg{width:16px;height:16px;flex:none}
+.theme-select{width:138px;min-width:0;flex:none;font-size:12px;padding:10px 12px;cursor:pointer}
 @media(max-width:899px){.topbar{flex-wrap:wrap}.topbar .brand{flex:1 1 100%}.topbar .header-actions{width:100%;justify-content:space-between}}
 @media(max-width:599px){
  .shell{padding:10px 10px 36px}
@@ -193,6 +192,7 @@ dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap;fo
  .topbar h1{font-size:14px;max-width:none;text-wrap:unset}
  .topbar .header-actions{width:100%;justify-content:space-between}
  .topbar .quiet{max-width:none;min-height:44px;padding:8px 12px;font-size:11px}
+ .header-actions .theme-select{width:126px;min-height:44px;padding:8px 10px;font-size:11px}
  .card{padding:12px;margin-bottom:10px;border-radius:18px}
  .calendar-heading{margin-bottom:8px;gap:8px}.calendar-heading h2{font-size:16px}
  .weekdays span{padding-bottom:4px;font-size:10px}
