@@ -187,6 +187,8 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 
 .document-fields{margin:16px 0;padding:16px;border:1px solid currentColor;border-radius:14px;min-width:0}.document-fields legend{font-weight:700;padding:0 6px}.document-fields input[type=file]{width:100%;max-width:100%;font-size:14px;padding:10px}.document-fields input[type=file]::file-selector-button{padding:8px 10px;border:0;border-radius:8px;margin-right:8px;font:inherit;cursor:pointer}.document-actions{margin-top:12px}.document-actions button{margin:4px 8px 4px 0}#uploadStatus{overflow-wrap:anywhere}#bookingForm [disabled]{opacity:.65}#slotBookings dd{overflow-wrap:anywhere;white-space:pre-wrap}
 
-.admin-badge{flex:none;padding:5px 10px;border:1px solid var(--accent);border-radius:999px;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.3px}.required-label{color:var(--muted);font-size:10px;font-weight:600}.document-fields{display:grid;gap:12px;border-color:var(--line)}.document-fields.hidden{display:none}.document-fields .hint{margin:0}
+.admin-badge{flex:none;padding:5px 10px;border:1px solid var(--accent);border-radius:999px;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.3px}.required-label{color:#dc2626;font-size:16px;font-weight:800}.document-fields{display:grid;gap:12px;border-color:var(--line)}.document-fields.hidden{display:none}.document-fields .hint{margin:0}
 
 .brand-title{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+
+@media(prefers-color-scheme:dark){.required-label{color:#f87171}}
