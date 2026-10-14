@@ -26,4 +26,17 @@
 @keyframes member-otp-spin{to{transform:rotate(360deg)}}
 @media(min-width:900px){.member-topbar{padding-bottom:26px}.member-login-card{margin:48px auto;padding:36px}.member-login-card h2{font-size:29px}.member-shell #dashboard{display:grid;grid-template-columns:1fr 1fr;gap:20px}.member-shell .member-account,.member-shell #memberMessage{grid-column:1/-1;margin:0}.member-shell #dashboard>.card{margin-bottom:0}}
 @media(max-width:360px){.member-topbar h1{font-size:23px}.member-back-link{font-size:11px;padding:9px 12px}.member-login-card{padding:24px 18px}.member-login-card h2{font-size:23px}}
+@media(max-width:599px){
+ .member-topbar{padding:2px 0 10px;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+ .member-topbar>div:first-child{flex:1 1 100%}.member-topbar h1{font-size:23px}
+ .member-topbar .header-actions{width:100%;justify-content:space-between}
+ .member-back-link{padding:8px 12px;font-size:11px}
+ .member-login-card{margin:12px auto;padding:18px 16px}
+ .member-login-card>.eyebrow{margin-bottom:8px}.member-login-card h2{font-size:23px;margin-bottom:10px}
+ .member-login-card .hint{margin-bottom:16px;line-height:1.55;font-size:12px}
+ .member-login-card form{gap:12px}.member-login-card input,.member-login-card .primary{min-height:48px}
+ .login-status{margin-top:8px}.otp-actions{margin-top:6px}
+ .member-account{margin:12px 0}.member-shell #dashboard>.card>h2{margin-bottom:12px}
+ .member-shell .booking-card{margin-bottom:10px}
+}
 @media(prefers-reduced-motion:reduce){.member-login-card button[aria-busy=true]::before{animation:none}}
