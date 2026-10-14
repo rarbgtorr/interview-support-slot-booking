@@ -30,7 +30,7 @@ If this feature is later promoted to production, apply `batch-booking-update.sql
 
 ## Transaction guarantees
 
-The public booking function calls one `support_book_public_slots` RPC, not two independent HTTP writes. The RPC calls reservation logic inside one database statement and shared transaction lock. A conflict in either box rolls back all new appointments and reservations. Request UUIDs make retries idempotent and reject reused IDs with different details. Public input cannot include an existing appointment ID or revision.
+The public booking function calls one `support_book_with_documents` RPC, which wraps `support_book_public_slots` and attaches the shared documents in the same transaction, not two independent HTTP writes. The RPC calls reservation logic inside one database statement and shared transaction lock. A conflict in either box rolls back all new appointments and reservations. Request UUIDs make retries idempotent and reject reused IDs with different details. Public input cannot include an existing appointment ID or revision.
 
 ## Local checks
 
@@ -51,3 +51,23 @@ npm run build
 Tests cover actual SQL and RPC behavior using isolated PGlite, privacy, signed sessions, batch rollback and retries, capacity, notes, timezone conversion and blocking. The optional `tests/browser-flow.cjs` requires Playwright/Chromium and tests real handlers and SQL with only the Supabase HTTP transport adapted. Set `QA_CHROMIUM_EXECUTABLE` if needed; `QA_SCREENSHOT_DIR` enables screenshots.
 
 Reference repository is unchanged: https://github.com/rarbgtorr/slot-booking-app
+
+## Resume and job description documents
+
+Every new public or admin booking requires one resume (PDF/DOCX) and either pasted JD text (up to 10,000 characters) or a JD file (PDF/DOCX/JPG/PNG). Files are limited to **2 MiB each**. Documents upload directly from the browser to private Supabase Storage using one-use object paths and signed upload URLs. No service key reaches the browser. The browser shows progress and retains completed uploads for retrying a failed booking. Booking APIs verify actual stored size and MIME before atomically linking the documents to appointments.
+
+Two selected slots share one document set. Rescheduling preserves the documents and computes retention from the latest associated appointment end, including appointments on different days. Existing appointments without attachments can still be rescheduled. New appointments require attachments. Admin booking cards show pasted JD text and authenticated **Download resume / Download JD** buttons. Links are created only on click, expire within 60 seconds, and cannot outlive the document deadline. Public calendar responses still expose no member details, files, filenames, document IDs, or JD text.
+
+Uploads become unavailable **24 hours after the final associated appointment ends**. The private Supabase `testing-document-cleanup` Edge Function runs through an authenticated Cron invocation every five minutes when there is work. Physical deletion occurs on the next successful cleanup run; failed Storage deletions retry. The cleanup worker marks records deleted only after the Storage API succeeds. It never deletes Storage objects by SQL. Abandoned uploads expire after 24 hours, well after their upload URLs expire. Appointment details and pasted JD text are retained. The document creation and cleanup claim RPCs share the same lock as booking and rescheduling.
+
+Testing uses the isolated private **testing-booking-documents** bucket and `testing_support_document_sets`. The bucket enforces 2 MiB and MIME limits. A conservative **64 MiB allocation cap** reserves 2 MiB for each pending/retained file, regardless of declared file size, to limit anonymous upload usage while testing. This accommodates at most 32 one-file sets or 16 two-file sets at once. Deleted files release that allocation. This is an application guard, not Supabase's full free quota. Do not enable paid upgrades or disable spending controls as part of setup.
+
+For a fresh Testing setup, apply both new document migrations after the existing migrations, and deploy the cleanup function:
+
+```bash
+supabase functions deploy testing-document-cleanup --project-ref YOUR_INTERVIEW_PROJECT_REF --no-verify-jwt
+```
+
+`--no-verify-jwt` is intentional here: the function implements custom authentication using a private token generated inside Supabase Vault. Cron supplies that token; the function hashes it and checks the server-only configuration before touching files. It does not accept anonymous callers. No extra Netlify environment variables are required. The scheduler runs independently of Netlify previews, which do not execute Netlify scheduled functions. Cron/Vault/network extensions are enabled by the Testing cleanup migration. Keep the Vault token private.
+
+Production promotion requires a separately reviewed storage bucket, document migration and production cleanup scheduler/function. The included cleanup deployment is **Testing only**; setting `BOOKING_DATASET=production` without that setup does not enable production uploads.

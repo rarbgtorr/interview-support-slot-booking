@@ -4,7 +4,7 @@ const S=require('../../public/schedule');
 class HttpError extends Error { constructor(status,message){super(message);this.status=status;} }
 class DatabaseError extends Error { constructor(code,message){super(message);this.code=code;} }
 function response(status,body){return {statusCode:status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'},body:JSON.stringify(body)};}
-function body(event){try{if((event.body||'').length>12000)throw new Error();const parsed=JSON.parse(event.body||'{}');if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error();return parsed;}catch{throw new HttpError(400,'Invalid request body.');}}
+function body(event){try{if((event.body||'').length>64000)throw new Error();const parsed=JSON.parse(event.body||'{}');if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error();return parsed;}catch{throw new HttpError(400,'Invalid request body.');}}
 const SESSION_COOKIE='interview_admin';
 function secret(){const value=process.env.ADMIN_JWT_SECRET;if(!value||value.length<32)throw new HttpError(503,'Administrator login is not configured.');return value;}
 function signAdmin(){const payload=Buffer.from(JSON.stringify({scope:'interview-admin',exp:Math.floor(Date.now()/1000)+28800})).toString('base64url');return payload+'.'+crypto.createHmac('sha256',secret()).update(payload).digest('base64url');}
@@ -65,4 +65,4 @@ async function allRows(table,select='*'){
   const rows=[];const limit=1000;
   for(let offset=0;;offset+=limit){const page=await db(table,{query:{select,order:'created_at.asc,id.asc',limit:String(limit),offset:String(offset)}});if(!Array.isArray(page))throw new HttpError(502,'Invalid database response.');rows.push(...page);if(page.length<limit)return rows;}
 }
-module.exports={S,HttpError,response,body,db,rpc,wrap,bookingId,validateAppointment,revision,monthRange,allRows,admin,signAdmin,sessionCookie,sameOrigin,validateSlotBooking,dataset};
+module.exports={S,HttpError,response,body,db,rpc,wrap,bookingId,validateAppointment,revision,monthRange,allRows,admin,signAdmin,sessionCookie,sameOrigin,validateSlotBooking,dataset,textField};

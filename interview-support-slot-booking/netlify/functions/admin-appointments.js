@@ -1,2 +1,3 @@
-const {wrap,response,body,rpc,validateAppointment}=require('./_shared');
-exports.handler=wrap('POST',async event=>{const input=body(event);const data=validateAppointment(input);return response(200,{appointment:await rpc('support_book_direct',{p_data:data,p_id:input.id||null})});},true);
+const {wrap,response,body,validateAppointment}=require('./_shared');
+const {bookWithDocuments}=require('./_documents');
+exports.handler=wrap('POST',async event=>{const input=body(event),data=validateAppointment(input);const result=await bookWithDocuments(input,data,null,{admin:true,id:input.id||null});return response(200,{appointment:input.id?result:result[0]});},true);

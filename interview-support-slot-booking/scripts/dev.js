@@ -8,7 +8,7 @@ http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost');
   if(url.pathname.startsWith('/.netlify/functions/')){
     const name=url.pathname.split('/').pop();if(!/^[a-z-]+$/.test(name)||!fs.existsSync(path.join(root,'netlify/functions',name+'.js'))){res.writeHead(404);res.end();return;}
-    let body='';for await(const chunk of req){body+=chunk;if(body.length>12000){res.writeHead(413);res.end();return;}}
+    let body='';for await(const chunk of req){body+=chunk;if(body.length>64000){res.writeHead(413);res.end();return;}}
     try{const result=await require(path.join(root,'netlify/functions',name+'.js')).handler({httpMethod:req.method,headers:req.headers,body,queryStringParameters:Object.fromEntries(url.searchParams)});res.writeHead(result.statusCode,result.headers);res.end(result.body);}catch{res.writeHead(500,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Unable to complete request.'}));}return;
   }
   const routes={'/':'index.html','/admin':'admin.html','/admin/':'admin.html'};
