@@ -36,3 +36,10 @@
 - 63 automated tests pass. Resume-only upload initialization and booking succeed, with no JD file or text; missing resume remains invalid. The old ownership/expiry rejection tests still pass.
 - Mobile browser flow verifies success confirmations for the two-slot booking and a resume-only submission with file mode selected but no JD file. The confirmation shows the saved times and has a working Done button. Light/dark layouts and existing booking/admin flows pass.
 - Connected Testing database rollback check confirms a document set can be created with no JD. Required resume and other document constraints remain in force.
+
+## Testing: member email OTP management (2026-10-14)
+
+- 76 automated tests pass. Coverage includes normalized email capture, mandatory email, immutable ownership, confirmed-email verification, forged/absent cookies, metadata spoofing, owner-only listing and actions, cancelled/past/legacy record restrictions, full/blocked destination rollback, document retention, stale revisions, secure cookies, OTP/provider errors, rate limits and logout.
+- Chromium flow passes public no-login booking, email capture, invalid then valid OTP, owner-only dashboard, another-email cancellation rejection, member reschedule preserving files/releasing original, member cancel, logout/reload privacy, and 320/390/1440 px light/dark layouts. Auth/Storage/REST are adapted; application handlers and SQL are real.
+- Connected Testing database rollback verification checks email capture, wrong-owner rejection, member move and cancellation. Auth settings returns email enabled; a request with an invalid token is rejected. No real OTP email was sent; SMTP delivery and OTP email templates require dashboard configuration and an inbox test.
+- Existing records without email remain admin-only. Public capacity responses contain no email or booking details. New member RPCs are service-only; anon/authenticated cannot read private appointment tables.

@@ -194,3 +194,5 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 @media(prefers-color-scheme:dark){.required-label{color:#f87171}}
 
 .booking-success{text-align:center}.booking-success h2{margin:16px 0 10px}.success-mark{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--available-bg);color:var(--available-text);border:2px solid var(--available-border);font-size:34px;font-weight:800}.booking-success .selected-time{white-space:pre-line;overflow-wrap:anywhere}.booking-success #successDone{margin-top:16px}
+
+.manage-link{display:inline-block;text-decoration:none;text-align:center}.topbar .manage-link{max-width:100px;font-size:12px;flex:none}.member-account{display:flex;align-items:center;justify-content:space-between;gap:12px}.member-account p{overflow-wrap:anywhere;min-width:0}.member-shell dd{white-space:pre-wrap}.member-shell .booking-actions{flex-wrap:wrap}.booking-success .manage-link{margin-top:14px}#otpCode{letter-spacing:3px}#moveSelection{white-space:pre-line}

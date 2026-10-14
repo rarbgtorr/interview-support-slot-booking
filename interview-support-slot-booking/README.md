@@ -2,7 +2,7 @@
 
 The public page at `/` shows **Available** only when both places are free, and **Booked** whenever either place is booked or the administrator blocks the box. Capacity counts appear only in admin. Once a slot start time passes, the public calendar shows a neutral, disabled **Past slot**, without booking colors or status. Public API responses omit past booking/block occupancy; admin retains booking history. Public users cannot select a box once either place is booked. Only an authenticated admin can fill its second place. This rule is enforced in the database under the same transaction lock as reservations; public retries remain idempotent. Select one or two different 30-minute boxes, then enter member details once and save. Slots may be adjacent, non-adjacent, or on different operating dates. Every selected box creates its own 30-minute appointment; each box still accepts two independent bookings.
 
-Public responses contain capacity and slot summaries only. Member names, WhatsApp numbers, company, experience, interview stage, notes, booking identifiers and management actions are not exposed by public APIs. Visitors have no login and cannot cancel or reschedule existing appointments.
+Public responses contain capacity and slot summaries only. Member names, email addresses, WhatsApp numbers, company, experience, interview stage, notes, booking identifiers and management actions are not exposed by public APIs. Visitors book without logging in and enter a required email address. They can optionally log in at `/member` using that email and an OTP to view and manage their own bookings.
 
 At `/admin`, sign in with the administrator password to view bookings and details, reschedule or cancel individual appointments, and block/unblock empty future boxes. Tap empty or blocked boxes directly, then **Block selected** or **Unblock selected** (up to 200 per action, across periods or dates). Bulk operations are atomic and reject conflicts without partially changing availability. Booked boxes remain clickable to manage their details while a block selection is active. With one empty box selected, **Book selected slot** opens the booking form. Existing bookings cannot be overwritten by blocking. Cancelling or moving one booking releases only its place. The administrator session uses a signed, expiring HttpOnly, Secure, SameSite=Strict cookie; all management APIs require it.
 
@@ -24,7 +24,7 @@ Configure these Netlify variables for the **Testing branch / branch deploy** con
 | `ADMIN_PASSWORD` | Your administrator password, at least 12 characters |
 | `ADMIN_JWT_SECRET` | Random signing secret, at least 32 characters |
 
-Secrets stay in Netlify or local `.env`, never in Git or browser files. Enable **Testing** in Netlify branch deploys and use that branch's preview URL. Its `/admin` path is the administrator page. Keep the production branch as `main`. No emails are sent.
+Secrets stay in Netlify or local `.env`, never in Git or browser files. Enable **Testing** in Netlify branch deploys and use that branch's preview URL. Its `/admin` path is the administrator page. Keep the production branch as `main`. No booking-notification emails are sent; OTP emails are sent only when members request login.
 
 If this feature is later promoted to production, apply `batch-booking-update.sql`, `bulk-blocking-update.sql` and `public-booking-policy-update.sql` to the production `support_*` dataset and explicitly set `BOOKING_DATASET=production` for the production deploy. Review that promotion separately; this Testing task does not change main or the current live site.
 
@@ -73,3 +73,22 @@ supabase functions deploy testing-document-cleanup --project-ref YOUR_INTERVIEW_
 Production promotion requires a separately reviewed storage bucket, document migration and production cleanup scheduler/function. The included cleanup deployment is **Testing only**; setting `BOOKING_DATASET=production` without that setup does not enable production uploads.
 
 Public bookings show a **Booking successful!** confirmation immediately after the server saves the appointment(s), including each booked time in the member’s timezone. Resume-only submissions are supported; resume validation remains required.
+
+## Member email login and booking management
+
+Booking does not require login. Every new booking captures a required email address with a warning to enter it carefully. The email is normalized and attached to both slots in the same booking transaction. Existing records with no email remain admin-managed; they are not assigned to a guessed email. Booking email cannot change through rescheduling.
+
+The `/member` page sends an email OTP through Supabase Auth, verifies the code, and stores the Supabase access token in a Secure, HttpOnly, SameSite=Strict cookie. No password, access token or refresh token is saved in browser storage. Every private request validates the token against Supabase `/auth/v1/user` and requires a confirmed email. User-editable metadata and client-supplied email are never used to authorize a booking. Sessions last at most the provider access-token lifetime or one hour, whichever is shorter; after expiry members request a new OTP. Logout clears the cookie and requests local Supabase sign-out.
+
+Members see only bookings attached to their verified email, including history. Upcoming bookings can be cancelled or moved to a completely free, unblocked future slot. Member rescheduling checks ownership, revision and destination availability under the same transaction lock as bookings. It preserves documents and the other selected appointment, and releases the old reservation only after a successful save. Member APIs cannot block slots, fill a second place in an occupied box or access admin document download APIs.
+
+### Enable real OTP email delivery in this interview project
+
+The app includes the project's **public publishable key** as a fallback in `netlify/functions/_auth-config.json` (this is not a service key). No extra Netlify variables are needed for the current project. You can override it with `SUPABASE_PUBLISHABLE_KEY` or legacy `SUPABASE_ANON_KEY`, with Functions scope. All server secret keys remain in environment variables.
+
+1. In the interview app project, open **Authentication → Email → SMTP Settings** and configure your SMTP sender. Supabase's default sender only delivers to organization team addresses and currently allows two messages per hour, so normal members require custom SMTP. Do not configure or change the reference project's settings.
+2. In **Authentication → Email Templates**, put `{{ .Token }}` in the **Magic Link** template and **Confirm signup** template, so new and returning users receive a code. An example template is included at `supabase/templates/member-otp.html`. Use subject `Your interview booking login code`.
+3. Keep email authentication and email confirmation enabled. Configure email OTP expiration and length, and review email rate limits to match your sender allowance. The UI accepts codes with 6–10 digits and waits 60 seconds before resending.
+4. Test `/member` on the Testing deploy with a booking email you control. Confirm inbox delivery, enter the code, and check the dashboard. The implementation tests use a mocked Auth provider; no real OTP emails were sent during development. The connected Auth API was checked for email availability and invalid-token rejection, not SMTP deliverability.
+
+Official setup: https://supabase.com/docs/guides/auth/auth-smtp and https://supabase.com/docs/guides/auth/auth-email-passwordless

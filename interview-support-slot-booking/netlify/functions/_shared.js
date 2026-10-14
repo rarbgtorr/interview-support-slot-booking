@@ -42,12 +42,13 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 function bookingId(value){if(typeof value!=='string'||!UUID.test(value))throw new HttpError(400,'A valid booking ID is required.');return value;}
 function textField(input,key,max,required=false){const value=input[key]??'';if(typeof value!=='string'||value.length>max|| (required&&!value.trim()))throw new HttpError(400,'Please check the '+key+' field.');return value.trim();}
 function revision(value){if(!Number.isInteger(value)||value<0)throw new HttpError(400,'Refresh before saving changes.');return value;}
+function emailAddress(value,required=true){if((value===undefined||value===null||value==='')&&!required)return null;if(typeof value!=='string')throw new HttpError(400,'Enter a valid email address.');const email=value.trim().toLowerCase();if(email.length>254||!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)||email.split('@')[0].length>64)throw new HttpError(400,'Enter a valid email address.');return email;}
 function validateAppointment(input){
  if(!S.validSelection(input.date,input.startMinute,30)||input.duration!==30)throw new HttpError(400,'Choose a future 30-minute slot.');
  if(!['demo','interview'].includes(input.type)||!S.validZone(input.timezone))throw new HttpError(400,'Choose a booking type and valid member timezone.');
  const memberName=textField(input,'memberName',100,true),phone=textField(input,'phone',30,true);
  if(!/^[+()\d\s-]{7,30}$/.test(phone)||!/^\d{7,15}$/.test(phone.replace(/\D/g,'')))throw new HttpError(400,'Enter a valid WhatsApp number with country code.');
- const data={date:input.date,startMinute:input.startMinute,duration:30,type:input.type,requestId:bookingId(input.requestId),timezone:input.timezone,memberName,phone,company:textField(input,'company',150,true),experience:textField(input,'experience',100,true),round:textField(input,'round',100,true),notes:textField(input,'notes',2000)};
+ const data={date:input.date,startMinute:input.startMinute,duration:30,type:input.type,requestId:bookingId(input.requestId),timezone:input.timezone,memberName,phone,email:emailAddress(input.email,!input.id),company:textField(input,'company',150,true),experience:textField(input,'experience',100,true),round:textField(input,'round',100,true),notes:textField(input,'notes',2000)};
  if(input.id){bookingId(input.id);data.revision=revision(input.revision);}
  return data;
 }
@@ -65,4 +66,4 @@ async function allRows(table,select='*'){
   const rows=[];const limit=1000;
   for(let offset=0;;offset+=limit){const page=await db(table,{query:{select,order:'created_at.asc,id.asc',limit:String(limit),offset:String(offset)}});if(!Array.isArray(page))throw new HttpError(502,'Invalid database response.');rows.push(...page);if(page.length<limit)return rows;}
 }
-module.exports={S,HttpError,response,body,db,rpc,wrap,bookingId,validateAppointment,revision,monthRange,allRows,admin,signAdmin,sessionCookie,sameOrigin,validateSlotBooking,dataset,textField};
+module.exports={S,HttpError,response,body,db,rpc,wrap,bookingId,validateAppointment,revision,monthRange,allRows,admin,signAdmin,sessionCookie,sameOrigin,validateSlotBooking,dataset,textField,emailAddress};
