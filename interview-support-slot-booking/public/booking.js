@@ -14,7 +14,13 @@ async function load(){const seq=++sequence;ready=false;$('refresh').disabled=tru
 function render(){
  $('monthTitle').textContent=new Intl.DateTimeFormat('en-IN',{timeZone:'UTC',month:'long',year:'numeric'}).format(new Date(month+'-01T12:00:00Z'));$('dateTitle').textContent=S.dateLabel(date);
  const grid=$('calendarGrid');grid.replaceChildren();const first=new Date(month+'-01T12:00:00Z'),total=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+1,0)).getUTCDate();for(let i=0;i<first.getUTCDay();i++)grid.append(document.createElement('span'));
- for(let i=1;i<=total;i++){const key=month+'-'+String(i).padStart(2,'0'),b=document.createElement('button');b.type='button';b.className='day'+(key===date?' selected':'')+(key===S.dateKey(new Date())?' today':'');b.textContent=i;b.setAttribute('aria-label',S.dateLabel(key));b.setAttribute('aria-pressed',String(key===date));b.onclick=()=>{date=key;render();};grid.append(b);}
+ for(let i=1;i<=total;i++){const key=month+'-'+String(i).padStart(2,'0'),b=document.createElement('button');b.type='button';b.className='day'+(key===date?' selected':'')+(key===S.dateKey(new Date())?' today':'');b.textContent=i;b.setAttribute('aria-label',S.dateLabel(key));b.setAttribute('aria-pressed',String(key===date));
+  if(ready){
+   const future=S.STARTS.filter(m=>S.instant(key,m).getTime()>Date.now()),dots=document.createElement('div');dots.className='day-dots';dots.setAttribute('aria-hidden','true');
+   for(const [state,present] of [['public-booked',future.some(m=>remaining(key,m)<2)],['available',future.some(m=>remaining(key,m)===2)]])if(present){const dot=document.createElement('i');dot.className=state+'-dot';dots.append(dot);}
+   b.append(dots);
+  }
+  b.onclick=()=>{date=key;render();};grid.append(b);}
  $('periods').replaceChildren(...S.GROUPS.map(g=>{const b=document.createElement('button');b.type='button';b.role='tab';b.setAttribute('aria-selected',String(g.id===period));b.textContent=g.label;b.onclick=()=>{period=g.id;render();};return b;}));renderSlots();renderSelection();
 }
 function renderSlots(){const grid=$('slotGrid');grid.replaceChildren();if(!ready){grid.innerHTML='<p class="empty">Loading availability. If loading fails, use Refresh to retry.</p>';return;}const group=S.GROUPS.find(g=>g.id===period);
@@ -33,7 +39,7 @@ $('bookingForm').onsubmit=async e=>{e.preventDefault();if(busy||!selection.lengt
 function moveMonth(n){const d=new Date(month+'-01T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+n);month=d.toISOString().slice(0,7);date=month+'-01';load();}
 $('prevMonth').onclick=()=>moveMonth(-1);$('nextMonth').onclick=()=>moveMonth(1);$('refresh').onclick=()=>{note();load();};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{if(!busy)$(b.dataset.close).close();});
 $('bookingDialog').addEventListener('cancel',e=>{if(busy)e.preventDefault();});
-populateZones($('timezoneSelect'),displayZone);populateZones($('memberTimezone'),displayZone);$('timezoneSelect').onchange=()=>{displayZone=$('timezoneSelect').value;try{localStorage.setItem('interviewSlotTimezone',displayZone);}catch{}if(!$('memberName').value)populateZones($('memberTimezone'),displayZone);render();};setInterval(()=>{if(ready&&!busy)renderSlots();},60000);load();
+populateZones($('timezoneSelect'),displayZone);populateZones($('memberTimezone'),displayZone);$('timezoneSelect').onchange=()=>{displayZone=$('timezoneSelect').value;try{localStorage.setItem('interviewSlotTimezone',displayZone);}catch{}if(!$('memberName').value)populateZones($('memberTimezone'),displayZone);render();};setInterval(()=>{if(ready&&!busy)render();},60000);load();
 
 function showSuccess(bookings){$('successSummary').textContent=bookings.length===1?'Your slot has been booked.':'Your '+bookings.length+' slots have been booked.';$('successTimes').textContent=bookings.map(slot=>S.localLabel(slot.date,slot.startMinute,slot.duration,slot.timezone)).join('\n')+'\n'+bookings[0].timezone;$('successDialog').showModal();}
 $('successDone').onclick=()=>$('successDialog').close();
