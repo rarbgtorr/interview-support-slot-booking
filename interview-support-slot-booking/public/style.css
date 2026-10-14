@@ -192,3 +192,5 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .brand-title{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
 
 @media(prefers-color-scheme:dark){.required-label{color:#f87171}}
+
+.booking-success{text-align:center}.booking-success h2{margin:16px 0 10px}.success-mark{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--available-bg);color:var(--available-text);border:2px solid var(--available-border);font-size:34px;font-weight:800}.booking-success .selected-time{white-space:pre-line;overflow-wrap:anywhere}.booking-success #successDone{margin-top:16px}

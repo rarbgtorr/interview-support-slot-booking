@@ -30,3 +30,9 @@
 - Chromium flow uploads two additional files, checks admin download controls, retains existing slot/reschedule behavior, and verifies 320/390/1440 px light/dark layouts. Admin identification appears under the title.
 - Labels changed to Documents, Name, Interviewing company name, Overall Experience, Your timezone and Selected time. The requested timezone/group/retention helper text is removed. Resume remains mandatory PDF/DOCX. JD remains file or pasted text.
 - Testing bucket allows text/plain while keeping private access and 2 MiB limits. The private cleanup worker includes additional files. No production dataset or main branch changes.
+
+## Testing: optional JD and booking confirmation (2026-10-14)
+
+- 63 automated tests pass. Resume-only upload initialization and booking succeed, with no JD file or text; missing resume remains invalid. The old ownership/expiry rejection tests still pass.
+- Mobile browser flow verifies success confirmations for the two-slot booking and a resume-only submission with file mode selected but no JD file. The confirmation shows the saved times and has a working Done button. Light/dark layouts and existing booking/admin flows pass.
+- Connected Testing database rollback check confirms a document set can be created with no JD. Required resume and other document constraints remain in force.
