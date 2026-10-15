@@ -1,0 +1,41 @@
+/* Reference member layout, with the shared premium light/dark palette. */
+.member-shell{max-width:960px}
+.member-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 22px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.member-topbar h1{margin:0;font-size:26px;letter-spacing:-.04em;line-height:1.3}
+.member-topbar .eyebrow{color:var(--accent);font-size:10px;letter-spacing:1.8px}
+.member-back-link{flex:none;color:var(--text);text-decoration:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:10px 15px;font-size:12px;font-weight:650;min-height:44px;display:inline-flex;align-items:center}
+.member-login-card{max-width:540px;margin:24px auto;padding:28px 22px}
+.member-login-card>.eyebrow{color:var(--accent);margin-bottom:12px}
+.member-login-card h2{margin:0 0 12px;font-size:25px;font-weight:750;letter-spacing:-.04em}
+.member-login-card .hint{font-size:13px;line-height:1.7;margin:0 0 26px;overflow-wrap:anywhere}
+.member-login-card form{gap:18px}
+.member-login-card label{font-size:12px;font-weight:650}
+.member-login-card input{min-height:52px;background:var(--surface-soft);border-radius:13px}
+.member-login-card .primary{min-height:52px}
+.member-login-card .primary:disabled{opacity:.75;cursor:wait}
+.login-status{min-height:18px;color:var(--muted);font-size:12px;line-height:1.65;margin:14px 0 0;overflow-wrap:anywhere}
+.member-login-card .error{margin:10px 0 0}
+.otp-actions{display:flex;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}
+.member-link-btn{border:0;background:transparent;color:var(--accent);padding:6px 0;font-size:12px;font-weight:650;min-height:44px}
+.member-link-btn:disabled{color:var(--muted);opacity:1}
+.member-login-card button[aria-busy=true]::before{content:"";display:inline-block;vertical-align:middle;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;margin-right:3px;animation:member-otp-spin .8s linear infinite}
+.member-back-link:focus-visible,.member-link-btn:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.member-account{margin:20px 0}.member-account p{font-size:14px}
+.member-shell #dashboard>.card>h2{margin-bottom:20px;font-size:20px}
+.member-shell .booking-card{margin-bottom:16px}.member-shell .booking-card:last-child{margin-bottom:0}
+@keyframes member-otp-spin{to{transform:rotate(360deg)}}
+@media(min-width:900px){.member-topbar{padding-bottom:26px}.member-login-card{margin:48px auto;padding:36px}.member-login-card h2{font-size:29px}.member-shell #dashboard{display:grid;grid-template-columns:1fr 1fr;gap:20px}.member-shell .member-account,.member-shell #memberMessage{grid-column:1/-1;margin:0}.member-shell #dashboard>.card{margin-bottom:0}}
+@media(max-width:360px){.member-topbar h1{font-size:23px}.member-back-link{font-size:11px;padding:9px 12px}.member-login-card{padding:24px 18px}.member-login-card h2{font-size:23px}}
+@media(max-width:599px){
+ .member-topbar{padding:2px 0 10px;margin-bottom:10px;gap:8px}
+ .member-topbar h1{font-size:23px}
+ .member-back-link{padding:8px 12px;font-size:11px}
+ .member-login-card{margin:12px auto;padding:18px 16px}
+ .member-login-card>.eyebrow{margin-bottom:8px}.member-login-card h2{font-size:23px;margin-bottom:10px}
+ .member-login-card .hint{margin-bottom:16px;line-height:1.55;font-size:12px}
+ .member-login-card form{gap:12px}.member-login-card input,.member-login-card .primary{min-height:48px}
+ .login-status{margin-top:8px}.otp-actions{margin-top:6px}
+ .member-account{margin:12px 0}.member-shell #dashboard>.card>h2{margin-bottom:12px}
+ .member-shell .booking-card{margin-bottom:10px}
+}
+@media(prefers-reduced-motion:reduce){.member-login-card button[aria-busy=true]::before{animation:none}}

@@ -25,3 +25,12 @@
   from = "/admin/*"
   to = "/admin.html"
   status = 200
+
+[[redirects]]
+  from = "/member"
+  to = "/member.html"
+  status = 200
+[[redirects]]
+  from = "/member/*"
+  to = "/member.html"
+  status = 200
