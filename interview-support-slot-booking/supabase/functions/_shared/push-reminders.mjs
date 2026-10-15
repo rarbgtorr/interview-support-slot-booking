@@ -21,22 +21,29 @@ export function reminderPayload(item,now=Date.now()){
  return {title:(item.type==='demo'?'Demo':'Interview')+' in '+minutes+' '+(minutes===1?'minute':'minutes'),body:item.name+' · '+fmt.format(new Date(start))+' · '+item.timezone+(item.slotCount>1?' · '+item.slotCount+' consecutive slots':''),
   tag:'booking-'+item.appointmentId+'-'+start,startsAt:item.startsAt,url:'/admin?date='+encodeURIComponent(item.date)+'&appointment='+encodeURIComponent(item.appointmentId)};
 }
+export function bookingPayload(item){
+ const fmt=new Intl.DateTimeFormat('en-IN',{timeZone:item.timezone,dateStyle:'medium',timeStyle:'short'});
+ return {title:'New '+(item.type==='demo'?'demo':'interview')+' booking',body:item.name+' · '+item.times.map(time=>fmt.format(new Date(time.startsAt))).join(' · ')+' · '+item.timezone,
+  tag:'new-booking-'+item.documentSetId,expiresAt:item.expiresAt,url:'/admin?date='+encodeURIComponent(item.date)+'&appointment='+encodeURIComponent(item.appointmentId)};
+}
 export async function deliverPush({item,payload,vapid,encode,fetcher=fetch,now=Date.now()}){
  const endpoint=pushEndpoint(item.endpoint);siteOrigin(item.origin,true);subscriptionKeys(item.keys);
- const ttl=payload.startsAt?Math.max(1,Math.min(2700,Math.ceil((Date.parse(payload.startsAt)-now)/1000))):60;
+ const deadline=payload.expiresAt||payload.startsAt;
+ const ttl=deadline?Math.max(1,Math.min(payload.expiresAt?86400:2700,Math.ceil((Date.parse(deadline)-now)/1000))):60;
  const details=encode({endpoint,keys:item.keys},JSON.stringify(payload),{vapidDetails:{subject:vapid.subject,publicKey:vapid.publicKey,privateKey:vapid.privateKey},TTL:ttl,urgency:'high'});
  const r=await fetcher(endpoint,{method:'POST',headers:details.headers,body:new Uint8Array(details.body),redirect:'error',signal:AbortSignal.timeout(10000)});
  return {result:r.ok?'sent':[404,410].includes(r.status)?'gone':'failed',status:r.status};
 }
-export async function processReminders({rpc,vapid,encode,fetcher=fetch,now=Date.now()}){
- const claims=await rpc('testing_support_claim_push_reminders',{p_limit:20});
+export async function processReminders({rpc,vapid,encode,fetcher=fetch,now=Date.now(),kind='reminder'}){
+ const booking=kind==='booking',claimRpc=booking?'testing_support_claim_booking_alerts':'testing_support_claim_push_reminders',prepareRpc=booking?'testing_support_prepare_booking_alert':'testing_support_prepare_push_reminder',finishRpc=booking?'testing_support_finish_booking_alert':'testing_support_finish_push_reminder';
+ const claims=await rpc(claimRpc,{p_limit:20});
  const result={sent:0,failed:0,skipped:0};
  async function next(){let claim;while((claim=claims.shift())){
   const params={p_id:claim.id,p_claim_token:claim.claimToken};
-  const item=await rpc('testing_support_prepare_push_reminder',params);
+  const item=await rpc(prepareRpc,params);
   if(!item){result.skipped++;continue;}
-  let outcome;try{outcome=await deliverPush({item,payload:reminderPayload(item,now),vapid,encode,fetcher,now});}catch{outcome={result:'failed',status:null};}
-  await rpc('testing_support_finish_push_reminder',{...params,p_result:outcome.result,p_status:outcome.status});
+  let outcome;try{outcome=await deliverPush({item,payload:booking?bookingPayload(item):reminderPayload(item,now),vapid,encode,fetcher,now});}catch{outcome={result:'failed',status:null};}
+  await rpc(finishRpc,{...params,p_result:outcome.result,p_status:outcome.status});
   result[outcome.result==='sent'?'sent':outcome.result==='gone'?'skipped':'failed']++;
  }}
  await Promise.all(Array.from({length:Math.min(4,claims.length)},next));return result;

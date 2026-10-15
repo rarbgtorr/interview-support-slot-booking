@@ -23,7 +23,7 @@
    status=data;lastLoad=Date.now();
    if(!supported)note('Open the admin page in Chrome on your Android phone to enable reminders.');
    else if(Notification.permission==='denied')note('Allow notifications in Chrome’s site settings, then return here.');
-   else note(current()?'Reminders are enabled on this phone.':'Enable reminders separately on each Android phone.');
+   else note(current()?'Booking alerts and reminders are enabled on this phone.':'Enable reminders separately on each Android phone.');
   }catch(error){if(stamp===epoch&&active)note(error.message,true);}finally{if(stamp===epoch){busy=false;render();}}
  }
  function publicKey(value){const decoded=atob(value.replaceAll('-','+').replaceAll('_','/'));return Uint8Array.from(decoded,c=>c.charCodeAt(0));}
@@ -34,7 +34,7 @@
   subscription=subscription||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:publicKey(status.publicKey)});
   if(stamp!==epoch||!active)return;
   const result=await call({action:'subscribe',subscription:subscription.toJSON(),origin:location.origin,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone});
-  if(stamp!==epoch||!active)return;status=result;note('Reminders enabled. Send a test notification to check this phone.');intent=false;
+  if(stamp!==epoch||!active)return;status=result;note('Booking alerts and reminders enabled. Send a test notification to check this phone.');intent=false;
  }
  el('enablePush').onclick=async()=>{
   if(busy||!active||!status?.publicKey)return;const stamp=epoch;busy=true;intent=true;note('Waiting for notification permission…');render();
