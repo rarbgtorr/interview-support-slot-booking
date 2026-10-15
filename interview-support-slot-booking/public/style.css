@@ -228,3 +228,6 @@ dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap;fo
 .demo-stat{background:var(--demo-bg);color:var(--demo-text)}
 .interview-stat{background:var(--interview-bg);color:var(--interview-text)}
 @media(min-width:600px){.period-counts{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:5px}.period-stat{font-size:10px}.period-tabs .admin-period-tab{min-height:66px}}
+
+.admin-reminders>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;font-size:13px;font-weight:750;list-style:none}.admin-reminders>summary::before{content:'›';font-size:20px;color:var(--accent)}.admin-reminders[open]>summary::before{transform:rotate(90deg)}.admin-reminders>summary>span:first-child{flex:1}.admin-reminders>summary::-webkit-details-marker{display:none}.reminder-content{padding-top:8px}.reminder-actions{display:flex;gap:8px;flex-wrap:wrap}.reminder-content details>summary{font-size:12px;cursor:pointer;min-height:40px;display:flex;align-items:center}.reminder-content .error{color:var(--danger)}.reminder-actions .quiet{flex:1;min-width:130px}.admin-reminders .admin-badge{white-space:nowrap}
+@media(min-width:900px){#app>.admin-reminders{grid-column:1/-1;margin:0}}
