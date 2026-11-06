@@ -13,12 +13,17 @@ const read=memberWrap('GET',async(event,user)=>{
 });
 const write=memberWrap('POST',async(event,user)=>{
  const input=body(event),id=bookingId(input.appointmentId);
+ if(input.action==='saveNotes'){
+  const rows=await db('support_appointments',{query:{select:'whatsapp',id:'eq.'+id,email:'eq.'+user.email}});if(!rows?.[0])throw new HttpError(404,'Booking not found.');
+  return response(200,await rpc('support_member_edit',{p_email:user.email,p_id:id,p_revision:revision(input.revision),p_phone:rows[0].whatsapp,p_notes:textField(input,'notes',2000)}));
+ }
  if(input.action==='prepare'){
-  const uploadId=crypto.randomUUID(),resume=input.resume?D.metadata(input.resume,'resume',uploadId):null,inviteFile=input.inviteFile?D.metadata(input.inviteFile,'invite',uploadId):null,jdFile=input.jdFile?D.metadata(input.jdFile,'jd',uploadId):null,jdText=textField(input,'jdText',10000),extras=input.additionalFiles??[];
+  if(input.inviteFile!=null||(Array.isArray(input.removeKinds)&&input.removeKinds.includes('invite')))throw new HttpError(400,'Interview invite screenshots cannot be changed.');
+  const uploadId=crypto.randomUUID(),resume=input.resume?D.metadata(input.resume,'resume',uploadId):null,jdFile=input.jdFile?D.metadata(input.jdFile,'jd',uploadId):null,jdText=textField(input,'jdText',10000),extras=input.additionalFiles??[];
   if(!Array.isArray(extras)||extras.length>6)throw new HttpError(400,'Choose up to six additional documents.');
   const additionalFiles=extras.map((f,i)=>D.metadata(f,'additional-'+(i+1),uploadId));
-  await rpc('support_prepare_member_document_changes',{p_email:user.email,p_id:id,p_revision:revision(input.revision),p_document_revision:revision(input.documentRevision),p_upload_id:uploadId,p_token_hash:D.hash(crypto.randomBytes(32).toString('hex')),p_resume:resume,p_invite_file:inviteFile,p_remove_kinds:input.removeKinds??[],p_jd_mode:input.jdMode,p_jd_file:jdFile,p_jd_text:jdText,p_additional_files:additionalFiles});
-  const uploads=await Promise.all([resume,inviteFile,jdFile,...additionalFiles].filter(Boolean).map(D.signedUpload));
+  await rpc('support_prepare_member_document_update',{p_email:user.email,p_id:id,p_revision:revision(input.revision),p_document_revision:revision(input.documentRevision),p_upload_id:uploadId,p_token_hash:D.hash(crypto.randomBytes(32).toString('hex')),p_resume:resume,p_notes:input.notes===undefined?null:textField(input,'notes',2000),p_remove_kinds:input.removeKinds??[],p_jd_mode:input.jdMode,p_jd_file:jdFile,p_jd_text:jdText,p_additional_files:additionalFiles});
+  const uploads=await Promise.all([resume,jdFile,...additionalFiles].filter(Boolean).map(D.signedUpload));
   return response(200,{updateId:uploadId,uploads});
  }
  if(input.action==='save'){
