@@ -10,7 +10,7 @@ const documents=new BookingDocuments(api);
 documents.reset();
 function remaining(day,minute){return availability.find(x=>x.date===day&&x.startMinute===minute)?.remaining??2;}
 function selected(day,minute){return selection.some(x=>x.date===day&&x.startMinute===minute);}
-async function load(){const seq=++sequence;ready=false;$('refresh').disabled=true;render();try{const data=await api('booking-calendar?month='+month);if(seq!==sequence)return;availability=data.slots;ready=true;render();}catch(e){note(e.message,true);render();}finally{if(seq===sequence)$('refresh').disabled=false;}}
+async function load(){const seq=++sequence;ready=false;$('refresh').disabled=true;$('refresh').setAttribute('aria-busy','true');$('refresh').textContent='Refreshing…';render();try{const data=await api('booking-calendar?month='+month);if(seq!==sequence)return;availability=data.slots;ready=true;render();}catch(e){note(e.message,true);render();}finally{if(seq===sequence){$('refresh').disabled=false;$('refresh').setAttribute('aria-busy','false');$('refresh').textContent='Refresh';}}}
 function render(){
  $('monthTitle').textContent=new Intl.DateTimeFormat('en-IN',{timeZone:'UTC',month:'long',year:'numeric'}).format(new Date(month+'-01T12:00:00Z'));$('dateTitle').textContent=S.dateLabel(date);
  const grid=$('calendarGrid');grid.replaceChildren();const first=new Date(month+'-01T12:00:00Z'),total=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+1,0)).getUTCDate();for(let i=0;i<first.getUTCDay();i++)grid.append(document.createElement('span'));
