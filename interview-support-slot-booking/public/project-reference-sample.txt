@@ -1,8 +1,135 @@
-Project Reference
+---------------------------------------######################################----------------------------------------------------------------
+Please provide the details of yours as given in the sample below 
 
-Project name:
-Project objective:
-Technologies used:
-Your role and responsibilities:
-Key features you worked on:
-A challenge you handled and how you resolved it:
+Please use the below sample as a reference format, not as content to copy.
+
+You can add more sections, technical explanations, sample queries, architecture details, or real scenarios based on your experience.
+
+Don't worry about grammar, spelling, or formatting. We only need to understand what you know, what you have worked on, and how your project works.
+
+If possible, provide detailed information about your current project, as interviewers may ask deeper questions about recent work.
+
+✅ Save everything in a .txt file and upload in the file section.
+
+More accurate project details → Better personalized answers → Stronger support for technical, scenario-based, and follow-up questions.
+--------------------------------------######################################----------------------------------------------------------------
+Note : Please remove the above section while you are uploading the txt file. and Try to avoid AI as much as possible to generate this document, write in your own words as much as possible.
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+
+********************************************************************************************************************************************
+1. SELF-INTRODUCTION (if you require anything specific)
+
+Good morning, My name is <name>, and I have 5 years of experience in the IT industry with <company name>
+
+I started my career as a Python Developer on the <project name>, where I developed a Python SDK, built ETL pipelines using Python and Pandas, worked with PySpark for data migration, and used AWS services along with Apache Airflow for workflow automation.
+
+Currently, I'm working as <role> for Deutsche Bank, where I design and optimize SQL-based data solutions using Hive and Impala, generate regulatory reports, perform data validation, and collaborate with multiple teams to deliver high-quality software solutions for the banking domain.
+
+My core technical skills include Python, SQL, PySpark, Hive, Impala, Airflow, AWS, GCP, and Git. I enjoy solving complex problems, writing clean and efficient code, and working closely with cross-functional teams to deliver reliable software solutions.
+
+I'm now looking for an opportunity where I can leverage my Python expertise, contribute to impactful software development projects, and continue learning while taking on greater responsibilities. Thank you.
+********************************************************************************************************************************************
+
+2. DETAILED PROJECT EXPLANATION
+
+1 <Project Name> :
+
+<Project Overview:>
+
+I worked on a project called CPRA-TECH, where we developed a Request Broker to help customers exercise their data privacy rights, such as requesting to access, update, or delete their personal data.
+
+One of the key achievements of this project was building a Python SDK that automates the complete request processing workflow. Instead of being tightly coupled to one implementation, the SDK is designed as a reusable library that other teams can use to build their own request brokers with minimal effort.
+
+The request broker is divided into three major components:
+
+#1. Consumer
+
+The Consumer receives customer requests through an Amazon Kinesis Stream. Each event contains the Amazon S3 path of the actual request file, which includes detailed information about the customer's request.
+
+The Consumer:
+
+* Reads the request file from S3.
+* Parses the request details.
+* Stores the processed information into intermediate storage systems such as **Amazon S3, local storage, MySQL, Oracle, and DynamoDB**.
+
+#2. Executor
+
+The Executor is the core processing component.
+
+Its responsibilities include:
+
+* Reading request details from the intermediate storage.
+* Automatically generating queries based on the request type.
+* Fetching, updating, or deleting customer data from target databases such as MySQL, Oracle, and DynamoDB.
+* Storing the processed results as CSV files back into the intermediate storage.
+
+#3. Producer
+
+The Producer retrieves the generated CSV files from the Executor and sends an acknowledgement or response back to the customer, indicating that the request has been successfully processed.
+
+#SDK Architecture
+
+A major advantage of our SDK is that it is loosely coupled and highly modular.
+
+Teams can:
+
+* Use our Consumer and Producer while developing their own custom Executor.
+* Use only the Executor while implementing their own Consumer and Producer.
+* Extend the SDK by adding support for new intermediate storage systems or additional target databases without affecting the existing components.
+
+This modular architecture makes the SDK highly reusable, scalable, and easy to maintain.
+
+#Project Reusability
+
+We demonstrated the reusability of our SDK by building our first implementation called the Zendesk Broker. For this project, we reused the existing Consumer and Producer components and only developed a new Executor specific to Zendesk. This significantly reduced development effort and demonstrated the flexibility of our architecture.
+
+#My Responsibilities
+
+My responsibilities included:
+
+* Developing Python modules for the SDK.
+* Building request processing logic in the Consumer and Executor.
+* Automating query generation for target databases.
+* Integrating with Amazon Kinesis, Amazon S3, MySQL, Oracle, and DynamoDB.
+* Ensuring the SDK was modular, reusable, and extensible.
+* Supporting new broker implementations using the common SDK.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+2 <Project Name> :
+
+In Metric mark we are transferring data from one database to another.
+Basically transferring data using sql queries. to confirm data transferred successfully we do checks based on source and target counts.
+data transfer excute on daily or weekly basis using airflow. in airflow task scheduled for each table to load data and store loaded data on s3.
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+3 <Project Name> :
+
+Developed ETL jobs using databricks. generated spark sql codes from hive scripts using data frame methodology.
+creating ini's in github respository. building and scheduling jobs in Xgears.
+monitoring the scheduled jobs using Dbeaver.
+validating the data between cloud and on-premises using data quality check approach.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+<Project roles and responsibilities>:
+
+1. we follow 15 days sprint. we use jira for tracking our tasks.
+we have banking regulators and auditors, they request data from hotscan (filtering system) so based on their request we do prepare sql queries and extract the data. this extracted data is shared with requestor.
+
+2. we have developed a GCP data pipeslines which genrates banking analytical reporst on weekly or monthly basis.
+Example: MT202 Report, US Scanning Report, UKSP Report
+
+MT202 Report pipeline: we get data from multiple sources and these source data arrives into Google cloud storage. we use airflow for orchestrate the workflow and dataproc with pyspark is used for transformations and data processing. This processed data is stored in bigquery where we generate required analytical reports.
+the stakeholders provides a set of rules that transcation should pass. we do transformations based on this and divides the transactions into good and bad transactions. this bad transactions are reported to requestor.
+
+
+3. we do reconciliations checks between PDS (contains all tarnsaction) and Hotscan (contains only filtered transactions). we do analysis on transactions (no matches) which are not present in hotscan and share the evidences with stakeholders and they do further analysis on final no matches.
+
+4. we migrated data pipelines from on-premises to GCP.
+
+5. we do mantain data pipelines and based on stakeholders request and changes. we do modifications in the pipeline and do testing and get approvals before deploying it.
