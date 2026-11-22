@@ -32,14 +32,42 @@ test('upcoming legacy bookings retain note editing even without a document set',
 test('notes-only API uses the verified owner and preserves the current WhatsApp number',async t=>{const appointment=id();let updated=0;t.mock.method(global,'fetch',async(url,options)=>{const u=new URL(url);if(u.pathname.endsWith('/auth/v1/user'))return json({id:id(),email,email_confirmed_at:new Date().toISOString()});if(u.pathname.endsWith('/testing_support_appointments')){assert.equal(u.searchParams.get('email'),'eq.'+email);assert.equal(u.searchParams.get('id'),'eq.'+appointment);return json([{whatsapp:'+919000000010'}]);}assert.ok(u.pathname.endsWith('/rpc/testing_support_member_edit'));const args=JSON.parse(options.body);assert.equal(args.p_email,email);assert.equal(args.p_phone,'+919000000010');assert.equal(args.p_notes,'New notes');updated++;return json({ok:true});});const r=await require('../netlify/functions/member-documents').handler({httpMethod:'POST',headers:{cookie:'interview_member_token=qa.member.signature'},body:JSON.stringify({action:'saveNotes',appointmentId:appointment,revision:0,notes:'New notes',email:'other@example.com',phone:'1111111111'})});assert.equal(r.statusCode,200);assert.equal(updated,1);});
 
 
-test('interview project reference is required and a member replacement is atomic and cleaned up',async()=>{
+test('the public API books an interview without a project reference',async t=>{
+ const set=id(),documentToken='c'.repeat(64),resume=file(set),invite=file(set,'invite','png');
+ const credentials={p_id:set,p_token_hash:D.hash(documentToken),p_resume:resume,p_invite_file:invite,p_jd_file:null,p_jd_text:'',p_additional_files:[]};
+ await rpc('create_document_set_with_invite',credentials);
+
+ const files=new Map([[resume.path,resume],[invite.path,invite]]);
+ const checkedFiles=[];
+ t.mock.method(global,'fetch',async(url,options)=>{
+  const route=new URL(url).pathname;
+  if(route.endsWith('/testing_support_document_sets'))return json([await get(set)]);
+  if(route.includes('/object/info/')){
+   const path=route.split('/').slice(-2).join('/');
+   const stored=files.get(path);
+   assert.ok(stored,'Only supplied documents should be checked');
+   checkedFiles.push(path);
+   return json({size:stored.size,content_type:stored.type});
+  }
+  assert.ok(route.endsWith('/testing_support_book_with_documents'));
+  return json(await rpc('book_with_documents',JSON.parse(options.body)));
+ });
+
+ const booking={type:'interview',requestId:id(),timezone:'Asia/Kolkata',memberName:'Member',phone:'+919000000010',email,company:'Example',experience:'5 years',round:'L2',notes:'',slots:[{date:'2036-01-01',startMinute:600}],documentSetId:set,documentToken};
+ const result=await require('../netlify/functions/book-slots').handler({httpMethod:'POST',headers:{},body:JSON.stringify(booking)});
+ assert.equal(result.statusCode,200,result.body);
+ assert.equal(JSON.parse(result.body).bookings[0].type,'interview');
+ assert.deepEqual(checkedFiles,[resume.path,invite.path]);
+ assert.equal((await get(set)).project_reference,null);
+});
+
+test('an optional project reference is attached, replaceable and cleaned up',async()=>{
  const set=id(),u=id(),reference=file(set,'project_reference','txt');
  const credentials={p_id:set,p_token_hash:'c'.repeat(64),p_resume:file(set),p_invite_file:file(set,'invite','png'),p_jd_file:null,p_jd_text:'',p_additional_files:[]};
  const payload={p_data:{type:'interview',duration:30,requestId:id(),timezone:'Asia/Kolkata',memberName:'Member',phone:'+919000000010',email,company:'Example',experience:'5 years',round:'L2',notes:''},p_slots:[{date:'2036-01-01',startMinute:600}],p_document_id:set,p_token_hash:'c'.repeat(64),p_admin:false,p_id:null};
- await assert.rejects(rpc('book_interview_with_reference',payload),{code:'22023'});
  await assert.rejects(rpc('create_document_set_with_reference',{...credentials,p_project_reference:file(set,'project_reference','pdf')}),{code:'22023'});
  await rpc('create_document_set_with_reference',{...credentials,p_project_reference:reference});
- const [a]=await rpc('book_interview_with_reference',payload),before=await info(a);
+ const [a]=await rpc('book_with_documents',payload),before=await info(a);
  assert.deepEqual(before.files.find(f=>f.kind==='project_reference'),{kind:'project_reference',name:reference.name});
  const next=file(u,'project_reference','docx');
  await rpc('prepare_member_reference_update',{p_email:email,p_id:a.id,p_revision:before.revision,p_document_revision:before.documentRevision,p_upload_id:u,p_token_hash:'d'.repeat(64),p_resume:null,p_project_reference:next,p_notes:null,p_jd_mode:'keep',p_jd_file:null,p_jd_text:'',p_additional_files:[],p_remove_kinds:[]});
